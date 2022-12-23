@@ -38,7 +38,7 @@ export const generateComments = () => ([
     "id": "3",
     "author": "Ed Harris",
     "comment": "a film that changed my life, a true masterpiece, post-credit scene was just amazing omg.",
-    "date": "2022-08-04T16:12:32.554Z",
+    "date": "2022-11-30T16:12:32.554Z",
     "emotion": "sleeping"
   },
 ]);
