@@ -19,7 +19,7 @@ const createFilmCardTemplate = (film) => {
     </p>
     <img src="./${poster}" alt="" class="film-card__poster">
     <p class="film-card__description">${cutDescription}</p>
-    <span class="film-card__comments">${comments} comments</span>
+    <span class="film-card__comments">${comments.length} comments</span>
     </a>
     <div class="film-card__controls">
     <button class="film-card__controls-item film-card__controls-item--add-to-watchlist" type="button">Add to watchlist</button>
@@ -31,22 +31,25 @@ const createFilmCardTemplate = (film) => {
 };
 
 export default class FilmCardView {
+  #element = null;
+  #film = null;
+
   constructor(film) {
-    this.film = film;
+    this.#film = film;
   }
 
-  getTemplate() {
-    return createFilmCardTemplate(this.film);
+  get template() {
+    return createFilmCardTemplate(this.#film);
   }
 
-  getElement() {
-    if(!this.element) {
-      this.element = createElement(this.getTemplate());
+  get element() {
+    if(!this.#element) {
+      this.#element = createElement(this.template);
     }
-    return this.element;
+    return this.#element;
   }
 
   removeElement() {
-    this.element = null;
+    this.#element = null;
   }
 }

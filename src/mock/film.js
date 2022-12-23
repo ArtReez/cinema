@@ -47,7 +47,7 @@ const descriptions = [
 export const generateFilms = () => ({
   "id": "0",
   "comments": [
-    "56", "73", "83"
+    "56", "73", "83", "3"
   ],
   "filmInfo": {
     "title": randomItem(titles),
