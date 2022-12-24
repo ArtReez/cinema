@@ -5,10 +5,12 @@ import FilmCardView from '../view/film-card-view.js';
 import LoadMoreButtonView from '../view/load-more-button-view.js';
 import FilmsListTopRatedView from '../view/films-list-top-rated-view.js';
 import FilmsListMostCommentedView from '../view/films-list-most-commented.js';
-import {render} from '../render.js';
+import NoFilmsListView from '../view/no-films-list-view.js';
 import PopupView from '../view/popup-view.js';
 import PopupCommentView from '../view/popup-comment-view.js';
+import {render} from '../render.js';
 
+const FILM_COUNT_PER_STEP = 5;
 
 export default class FilmsPresenter {
   #filmsContainer = null;
@@ -19,7 +21,6 @@ export default class FilmsPresenter {
   #commentsList = [];
   #popupContainer = null;
 
-
   #filmsComponent = new FilmsView();
   #filmsListComponent = new FilmsListView();
   #filmsListContainerComponent = new FilmsListContainerView();
@@ -27,34 +28,66 @@ export default class FilmsPresenter {
   #filmsListTopRatedContainerComponent = new FilmsListContainerView();
   #filmsListMostCommentedComponent = new FilmsListMostCommentedView();
   #filmsListMostCommentedContainerComponent = new FilmsListContainerView();
+  #loadMoreButtonComponent = new LoadMoreButtonView();
+  #renderedFilmCount = FILM_COUNT_PER_STEP;
 
-  init = (filmsContainer, filmsModel) => {
+  constructor(filmsContainer, filmsModel) {
     this.#filmsContainer = filmsContainer;
     this.#filmsModel = filmsModel;
+  }
+
+  init = () => {
     this.#filmsList = [...this.#filmsModel.films];
+    this.#renderMain();
+  };
 
+  #renderMain = () => {
     render(this.#filmsComponent, this.#filmsContainer);
-    render(this.#filmsListComponent, this.#filmsComponent.element);
-    render(this.#filmsListContainerComponent, this.#filmsListComponent.element);
 
-    for (let i = 0; i < this.#filmsList.length; i++) {
-      this.#renderFilmCard(this.#filmsList[i]);
+    if (this.#filmsList.every((film) => film.empty)) {
+      render(new NoFilmsListView(), this.#filmsComponent.element);
+
+    } else {
+
+      render(this.#filmsListComponent, this.#filmsComponent.element);
+      render(this.#filmsListContainerComponent, this.#filmsListComponent.element);
+
+      for (let i = 0; i < Math.min(this.#filmsList.length, FILM_COUNT_PER_STEP); i++) {
+        this.#renderFilmCard(this.#filmsList[i]);
+      }
+
+      if (this.#filmsList.length > FILM_COUNT_PER_STEP) {
+        render(this.#loadMoreButtonComponent, this.#filmsListComponent.element);
+        this.#loadMoreButtonComponent.element.addEventListener('click', this.#handleLoadMoreButtonClick);
+      }
+
+      render(this.#filmsListTopRatedComponent, this.#filmsComponent.element);
+      render(this.#filmsListTopRatedContainerComponent, this.#filmsListTopRatedComponent.element);
+      render(new FilmCardView(this.#filmsList[0]), this.#filmsListTopRatedContainerComponent.element);
+
+      render(this.#filmsListMostCommentedComponent, this.#filmsComponent.element);
+      render(this.#filmsListMostCommentedContainerComponent, this.#filmsListMostCommentedComponent.element);
+      render(new FilmCardView(this.#filmsList[0]), this.#filmsListMostCommentedContainerComponent.element);
     }
+  };
 
-    render(new LoadMoreButtonView(), this.#filmsListComponent.element);
+  #handleLoadMoreButtonClick = (evt) => {
+    evt.preventDefault();
+    this.#filmsList
+      .slice(this.#renderedFilmCount, this.#renderedFilmCount + FILM_COUNT_PER_STEP)
+      .forEach((film) => this.#renderFilmCard(film));
 
-    render(this.#filmsListTopRatedComponent, this.#filmsComponent.element);
-    render(this.#filmsListTopRatedContainerComponent, this.#filmsListTopRatedComponent.element);
-    render(new FilmCardView(this.#filmsList[0]), this.#filmsListTopRatedContainerComponent.element);
+    this.#renderedFilmCount += FILM_COUNT_PER_STEP;
 
-    render(this.#filmsListMostCommentedComponent, this.#filmsComponent.element);
-    render(this.#filmsListMostCommentedContainerComponent, this.#filmsListMostCommentedComponent.element);
-    render(new FilmCardView(this.#filmsList[0]), this.#filmsListMostCommentedContainerComponent.element);
+    if (this.#renderedFilmCount >= this.#filmsList.length) {
+      this.#loadMoreButtonComponent.element.remove();
+      this.#loadMoreButtonComponent.removeElement();
+    }
   };
 
   #renderFilmCard = (film) => {
     const filmCardComponent = new FilmCardView(film);
-    let popupComponent;
+    let popupComponent = '';
 
     this.#popupContainer = document.body;
     this.#commentsList = [...this.#filmsModel.comments];
@@ -62,8 +95,8 @@ export default class FilmsPresenter {
 
     const popupOpen = () => {
       popupComponent = new PopupView(film);
-      this.#popupContainer.appendChild(popupComponent.element);
-      this.#commentsContainer = document.querySelector('.film-details__comments-list');
+      this.#popupContainer.append(popupComponent.element);
+      this.#commentsContainer = popupComponent.element.querySelector('.film-details__comments-list');
       this.#commentsContainer.innerHTML = ''; // clear list for mocks
       for(let i = 0; i < this.#compareComments.length; i++) {
         render(new PopupCommentView(this.#compareComments[i]), this.#commentsContainer);
@@ -71,29 +104,32 @@ export default class FilmsPresenter {
     };
 
     const popupClosed = () => {
-      this.#popupContainer.removeChild(popupComponent.element);
+      popupComponent.element.remove();
+      popupComponent.removeElement();
     };
 
-    const onEscapeKeyDown = (evt) => {
+    const onEscKeyDown = (evt) => {
       if (evt.key === 'Escape' || evt.key === 'Esc') {
         evt.preventDefault();
+        document.removeEventListener('keydown', onEscKeyDown);
         popupClosed();
-        document.removeEventListener('keydown', onEscapeKeyDown);
       }
     };
 
     filmCardComponent.element.querySelector('.film-card__link').addEventListener('click', () => {
-      if(document.querySelector('.film-details')) {
-        document.querySelector('.film-details').remove();
+      if (this.#popupContainer.querySelector('.film-details')) {
+        this.#popupContainer.querySelector('.film-details').remove();
+        document.removeEventListener('keydown', onEscKeyDown);
       }
+
       popupOpen();
-      document.addEventListener('keydown', onEscapeKeyDown);
       this.#popupContainer.classList.add('hide-overflow');
+      document.addEventListener('keydown', onEscKeyDown);
 
       popupComponent.element.querySelector('.film-details__close-btn').addEventListener('click', () => {
         popupClosed();
-        document.removeEventListener('keydown', onEscapeKeyDown);
         this.#popupContainer.classList.remove('hide-overflow');
+        document.removeEventListener('keydown', onEscKeyDown);
       });
     });
 
