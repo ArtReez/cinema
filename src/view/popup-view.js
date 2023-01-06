@@ -1,4 +1,4 @@
-import {createElement} from '../render.js';
+import AbstructView from '../framework/view/abstract-view.js';
 import { humanizeFilmDatePopup, humanizeFilmTime, getList, getGenres, isActive } from '../utils.js';
 
 const createPopupTemplate = (film) => {
@@ -199,11 +199,11 @@ const createPopupTemplate = (film) => {
   );
 };
 
-export default class PopupView {
-  #element = null;
+export default class PopupView extends AbstructView {
   #film = null;
 
   constructor(film) {
+    super();
     this.#film = film;
   }
 
@@ -211,14 +211,13 @@ export default class PopupView {
     return createPopupTemplate(this.#film);
   }
 
-  get element() {
-    if(!this.#element) {
-      this.#element = createElement(this.template);
-    }
-    return this.#element;
-  }
+  setClosedPopupHandler = (callback) => {
+    this._callback.click = callback;
+    this.element.querySelector('.film-details__close-btn').addEventListener('click', this.#closedPopupClickHandler);
+  };
 
-  removeElement() {
-    this.#element = null;
-  }
+  #closedPopupClickHandler = (evt) => {
+    evt.preventDefault();
+    this._callback.click();
+  };
 }

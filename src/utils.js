@@ -24,6 +24,8 @@ const isActive = (item) => item ? 'film-details__control-button--active' : '';
 
 const randomItem = (array) => array[Math.floor(Math.random() * array.length)];
 
+const capitalizeFirstLetter = (item) => item.charAt(0).toUpperCase() + item.slice(1);
+
 export {
   humanizeFilmDate,
   humanizeFilmTime,
@@ -33,4 +35,5 @@ export {
   getGenres,
   isActive,
   randomItem,
+  capitalizeFirstLetter,
 };

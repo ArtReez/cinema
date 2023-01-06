@@ -1,3 +1,4 @@
+import {render, remove} from '../framework/render.js';
 import FilmsView from '../view/films-view.js';
 import FilmsListView from '../view/films-list-view.js';
 import FilmsListContainerView from '../view/films-list-container-view.js';
@@ -8,7 +9,6 @@ import FilmsListMostCommentedView from '../view/films-list-most-commented.js';
 import NoFilmsListView from '../view/no-films-list-view.js';
 import PopupView from '../view/popup-view.js';
 import PopupCommentView from '../view/popup-comment-view.js';
-import {render} from '../render.js';
 
 const FILM_COUNT_PER_STEP = 5;
 
@@ -29,6 +29,7 @@ export default class FilmsPresenter {
   #filmsListMostCommentedComponent = new FilmsListMostCommentedView();
   #filmsListMostCommentedContainerComponent = new FilmsListContainerView();
   #loadMoreButtonComponent = new LoadMoreButtonView();
+
   #renderedFilmCount = FILM_COUNT_PER_STEP;
 
   constructor(filmsContainer, filmsModel) {
@@ -58,7 +59,7 @@ export default class FilmsPresenter {
 
       if (this.#filmsList.length > FILM_COUNT_PER_STEP) {
         render(this.#loadMoreButtonComponent, this.#filmsListComponent.element);
-        this.#loadMoreButtonComponent.element.addEventListener('click', this.#handleLoadMoreButtonClick);
+        this.#loadMoreButtonComponent.setClickHandler(this.#handleLoadMoreButtonClick);
       }
 
       render(this.#filmsListTopRatedComponent, this.#filmsComponent.element);
@@ -71,8 +72,7 @@ export default class FilmsPresenter {
     }
   };
 
-  #handleLoadMoreButtonClick = (evt) => {
-    evt.preventDefault();
+  #handleLoadMoreButtonClick = () => {
     this.#filmsList
       .slice(this.#renderedFilmCount, this.#renderedFilmCount + FILM_COUNT_PER_STEP)
       .forEach((film) => this.#renderFilmCard(film));
@@ -80,20 +80,19 @@ export default class FilmsPresenter {
     this.#renderedFilmCount += FILM_COUNT_PER_STEP;
 
     if (this.#renderedFilmCount >= this.#filmsList.length) {
-      this.#loadMoreButtonComponent.element.remove();
-      this.#loadMoreButtonComponent.removeElement();
+      remove(this.#loadMoreButtonComponent);
     }
   };
 
   #renderFilmCard = (film) => {
     const filmCardComponent = new FilmCardView(film);
-    let popupComponent = '';
+    let popupComponent;
 
     this.#popupContainer = document.body;
     this.#commentsList = [...this.#filmsModel.comments];
     this.#compareComments = this.#commentsList.slice().filter((el) => this.#filmsList[0].comments.includes(el.id));
 
-    const popupOpen = () => {
+    const openPopup = () => {
       popupComponent = new PopupView(film);
       this.#popupContainer.append(popupComponent.element);
       this.#commentsContainer = popupComponent.element.querySelector('.film-details__comments-list');
@@ -103,33 +102,32 @@ export default class FilmsPresenter {
       }
     };
 
-    const popupClosed = () => {
-      popupComponent.element.remove();
-      popupComponent.removeElement();
-    };
-
     const onEscKeyDown = (evt) => {
       if (evt.key === 'Escape' || evt.key === 'Esc') {
         evt.preventDefault();
-        document.removeEventListener('keydown', onEscKeyDown);
-        popupClosed();
+        this.#popupContainer.classList.remove('hide-overflow');
+        closedPopup();
       }
     };
 
-    filmCardComponent.element.querySelector('.film-card__link').addEventListener('click', () => {
+    function closedPopup() {
+      popupComponent.element.remove();
+      popupComponent.removeElement();
+      document.removeEventListener('keydown', onEscKeyDown);
+    }
+
+    filmCardComponent.setOpenPopupHandler(() => {
       if (this.#popupContainer.querySelector('.film-details')) {
         this.#popupContainer.querySelector('.film-details').remove();
-        document.removeEventListener('keydown', onEscKeyDown);
       }
 
-      popupOpen();
+      openPopup();
       this.#popupContainer.classList.add('hide-overflow');
       document.addEventListener('keydown', onEscKeyDown);
 
-      popupComponent.element.querySelector('.film-details__close-btn').addEventListener('click', () => {
-        popupClosed();
+      popupComponent.setClosedPopupHandler(() => {
         this.#popupContainer.classList.remove('hide-overflow');
-        document.removeEventListener('keydown', onEscKeyDown);
+        closedPopup();
       });
     });
 

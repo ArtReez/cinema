@@ -44,6 +44,8 @@ const descriptions = [
   "Sed sed nisi sed augue convallis suscipit in sed felis. Aliquam erat volutpat. Nunc fermentum tortor ac porta dapibus. In rutrum ac purus sit amet tempus."
 ];
 
+const isTrue = [true, false];
+
 export const generateFilms = () => ({
   "id": "0",
   "comments": [
@@ -74,9 +76,9 @@ export const generateFilms = () => ({
     "description": randomItem(descriptions),
   },
   "userDetails": {
-    "watchlist": false,
-    "alreadyWatched": true,
+    "watchlist": randomItem(isTrue),
+    "alreadyWatched": randomItem(isTrue),
     "watchingDate": "2019-04-12T16:12:32.554Z",
-    "favorite": false
+    "favorite": randomItem(isTrue),
   }
 });
