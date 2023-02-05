@@ -1,5 +1,5 @@
 import AbstructView from '../framework/view/abstract-view.js';
-import { humanizeFilmDatePopup, humanizeFilmTime, getList, getGenres, isActive } from '../utils.js';
+import { humanizeFilmDatePopup, humanizeFilmTime, getList } from '../utils/utils.js';
 
 const createPopupTemplate = (film) => {
   const {
@@ -12,7 +12,7 @@ const createPopupTemplate = (film) => {
       director,
       writers,
       actors,
-      release: {date, releaseCountry},
+      release: { date, releaseCountry },
       runtime,
       genre,
       description,
@@ -21,7 +21,6 @@ const createPopupTemplate = (film) => {
       watchlist,
       alreadyWatched,
       favorite,
-      // watchingDate,
     }
   } = film;
 
@@ -29,10 +28,9 @@ const createPopupTemplate = (film) => {
   const filmTime = humanizeFilmTime(runtime);
   const filmWrites = getList(writers);
   const filmActors = getList(actors);
-  const filmGenres = getGenres(genre);
-  const watchlistClassName = isActive(watchlist);
-  const alreadyWatchedClassName = isActive(alreadyWatched);
-  const favoriteClassName = isActive(favorite);
+  const filmGenresName = genre.length > 1 ? 'Generes' : 'Genre';
+  const filmGenres = genre.join('');
+  const isActiveClassName = (item) => item ? 'film-details__control-button--active' : '';
 
   return (
     `<section class="film-details">
@@ -86,10 +84,8 @@ const createPopupTemplate = (film) => {
                 <td class="film-details__cell">${releaseCountry}</td>
               </tr>
               <tr class="film-details__row">
-                <td class="film-details__term">Genres</td>
-                <td class="film-details__cell">
-                  ${filmGenres}
-                </td>
+                <td class="film-details__term">${filmGenresName}</td>
+                <td class="film-details__cell">${filmGenres}</td>
               </tr>
             </table>
 
@@ -98,9 +94,9 @@ const createPopupTemplate = (film) => {
         </div>
 
         <section class="film-details__controls">
-          <button type="button" class="film-details__control-button film-details__control-button--watchlist ${watchlistClassName}" id="watchlist" name="watchlist">Add to watchlist</button>
-          <button type="button" class="film-details__control-button film-details__control-button--watched ${alreadyWatchedClassName}" id="watched" name="watched">Already watched</button>
-          <button type="button" class="film-details__control-button film-details__control-button--favorite ${favoriteClassName}" id="favorite" name="favorite">Add to favorites</button>
+          <button type="button" class="film-details__control-button film-details__control-button--watchlist ${isActiveClassName(watchlist)}" id="watchlist" name="watchlist">Add to watchlist</button>
+          <button type="button" class="film-details__control-button film-details__control-button--watched ${isActiveClassName(alreadyWatched)}" id="watched" name="watched">Already watched</button>
+          <button type="button" class="film-details__control-button film-details__control-button--favorite ${isActiveClassName(favorite)}" id="favorite" name="favorite">Add to favorites</button>
         </section>
       </div>
 
@@ -212,12 +208,42 @@ export default class PopupView extends AbstructView {
   }
 
   setClosedPopupHandler = (callback) => {
-    this._callback.click = callback;
+    this._callback.popupClick = callback;
     this.element.querySelector('.film-details__close-btn').addEventListener('click', this.#closedPopupClickHandler);
   };
 
   #closedPopupClickHandler = (evt) => {
     evt.preventDefault();
-    this._callback.click();
+    this._callback.popupClick();
+  };
+
+  setWatchListClickHandler = (callback) => {
+    this._callback.watchListClick = callback;
+    this.element.querySelector('.film-details__control-button--watchlist').addEventListener('click', this.#watchlistClickHandler);
+  };
+
+  #watchlistClickHandler = (evt) => {
+    evt.preventDefault();
+    this._callback.watchListClick();
+  };
+
+  setAlreadyWatchedClickHandler = (callback) => {
+    this._callback.alreadyWatched = callback;
+    this.element.querySelector('.film-details__control-button--watched').addEventListener('click', this.#alreadyWatchedClickHandler);
+  };
+
+  #alreadyWatchedClickHandler = (evt) => {
+    evt.preventDefault();
+    this._callback.alreadyWatched();
+  };
+
+  setFavoriteClickHandler = (callback) => {
+    this._callback.favoriteClick = callback;
+    this.element.querySelector('.film-details__control-button--favorite').addEventListener('click', this.#favoriteClickHandler);
+  };
+
+  #favoriteClickHandler = (evt) => {
+    evt.preventDefault();
+    this._callback.favoriteClick();
   };
 }
