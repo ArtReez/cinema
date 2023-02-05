@@ -1,5 +1,5 @@
 import AbstractView from '../framework/view/abstract-view.js';
-import { humanizeFilmDateCommentsPopup } from '../utils.js';
+import { humanizeFilmDateCommentsPopup } from '../utils/utils.js';
 
 
 const createPopupCommentTemplate = (userComment) => {

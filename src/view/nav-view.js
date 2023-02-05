@@ -1,5 +1,5 @@
 import AbstractView from '../framework/view/abstract-view.js';
-import { capitalizeFirstLetter } from '../utils.js';
+import { capitalizeFirstLetter } from '../utils/utils.js';
 
 const createNavigationItemTemplate = (filter) => {
   const {name, count} = filter;
