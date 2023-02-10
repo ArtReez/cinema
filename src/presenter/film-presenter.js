@@ -10,6 +10,7 @@ const Mode = {
 
 export default class FilmPresenter {
   #filmListContainer = null;
+  // #filmListTopRatedContainer = null;
   #filmCardComponent = null;
   #popupContainer = null;
   #filmPopupComponent = null;
@@ -22,6 +23,7 @@ export default class FilmPresenter {
 
   constructor(filmListContainer, commentsPopup, changeData, changeMode) {
     this.#filmListContainer = filmListContainer;
+    // this.#filmListTopRatedContainer = filmListTopRatedContainer;
     this.#commentsPopup = commentsPopup;
     this.#changeData = changeData;
     this.#changeMode = changeMode;
@@ -32,14 +34,10 @@ export default class FilmPresenter {
     this.#popupContainer = document.body;
 
     const prevFilmCardComponent = this.#filmCardComponent;
-    // console.log('prevFilmCardComponent: ', prevFilmCardComponent);
     const prevFilmPopupComponent = this.#filmPopupComponent;
-    // console.log('prevFilmPopupComponent: ', prevFilmPopupComponent);
 
     this.#filmCardComponent = new FilmCardView(film);
-    // console.log('this.#filmCardComponent: ', this.#filmCardComponent.element);
     this.#filmPopupComponent = new PopupView(film);
-    // console.log('this.#filmPopupComponent: ', this.#filmPopupComponent.element);
 
     this.#filmCardComponent.setOpenPopupHandler(this.#handleFilmCardClick);
     this.#filmPopupComponent.setClosedPopupHandler(this.#handlePopupClick);
@@ -51,9 +49,10 @@ export default class FilmPresenter {
     this.#filmPopupComponent.setAlreadyWatchedClickHandler(this.#handleAlreadyWatchedClick);
     this.#filmPopupComponent.setFavoriteClickHandler(this.#handleFavoriteClick);
 
-    if (prevFilmPopupComponent === null || prevFilmCardComponent === null) {
+    if (prevFilmCardComponent === null || prevFilmPopupComponent === null) {
       render(this.#filmCardComponent, this.#filmListContainer);
-      console.log('null element');
+      // render(this.#filmCardComponent, this.#filmListTopRatedContainer);
+      console.log('prevComponent - NULL');
       return;
     }
 
@@ -107,7 +106,6 @@ export default class FilmPresenter {
     document.removeEventListener('keydown', this.#escKeyDownHandler);
     this.#popupContainer.classList.remove('hide-overflow');
     this.#filmPopupComponent.element.remove();
-    // remove(this.#filmPopupComponent);
     this.#mode = Mode.DEFAULT;
     console.log('closedPopup mode:', this.#mode);
   };
@@ -127,7 +125,6 @@ export default class FilmPresenter {
 
   #handlePopupClick = () => {
     this.#changeMode();
-    // this.#closedPopup();
   };
 
   #handleWatchListClick = () => {
