@@ -15,7 +15,34 @@ const humanizeFilmTime = (time) => {
 const getList = (array) => array.reduce((acc, el) => `${acc}, ${el}`);
 const getGenres = (array) => array.map((item) => `<span class="film-details__genre">${item}</span>`);
 const randomItem = (array) => array[Math.floor(Math.random() * array.length)];
+const randomNumber = () => Math.trunc(Math.random() * 10000000000);
 const capitalizeFirstLetter = (item) => item.charAt(0).toUpperCase() + item.slice(1);
+
+const getWeigthForNullSortItem = (filmA, filmB) => {
+  if (filmA === null && filmB === null) {
+    return 0;
+  }
+
+  if (filmA === null) {
+    return 1;
+  }
+
+  if (filmB === null) {
+    return -1;
+  }
+
+  return null;
+};
+
+const sortFilmDate = (filmA, filmB) => {
+  const weigth = getWeigthForNullSortItem(filmA.filmInfo.release.date, filmB.filmInfo.release.date);
+  return weigth ?? dayjs(filmB.filmInfo.release.date).diff(filmA.filmInfo.release.date);
+};
+
+const sortFilmRating = (filmA, filmB) => {
+  const weigth = getWeigthForNullSortItem(+filmA.filmInfo.totalRating, +filmB.filmInfo.totalRating);
+  return weigth ?? dayjs(filmB.filmInfo.totalRating).diff(filmA.filmInfo.totalRating);
+};
 
 export {
   humanizeFilmDate,
@@ -25,5 +52,8 @@ export {
   getList,
   getGenres,
   randomItem,
+  randomNumber,
   capitalizeFirstLetter,
+  sortFilmDate,
+  sortFilmRating,
 };

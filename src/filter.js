@@ -1,10 +1,10 @@
-import { filterType } from './const.js';
+import { FilterType } from './const.js';
 
 const filter = {
-  [filterType.ALL]: (films) => films,
-  [filterType.WATCHLIST]: (films) => films.filter((film) => film.userDetails.watchlist),
-  [filterType.HISTORY]: (films) => films.filter((film) => film.userDetails.alreadyWatched),
-  [filterType.FAVORITES]: (films) => films.filter((film) => film.userDetails.favorite),
+  [FilterType.ALL]: (films) => films,
+  [FilterType.WATCHLIST]: (films) => films.filter((film) => film.userDetails.watchlist),
+  [FilterType.HISTORY]: (films) => films.filter((film) => film.userDetails.alreadyWatched),
+  [FilterType.FAVORITES]: (films) => films.filter((film) => film.userDetails.favorite),
 };
 
 export {filter};

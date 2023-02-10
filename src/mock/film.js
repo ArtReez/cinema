@@ -1,4 +1,4 @@
-import { randomItem, getGenres} from '../utils/utils.js';
+import { randomItem, randomNumber, getGenres} from '../utils/film.js';
 import { nanoid } from 'nanoid';
 
 const titles = [
@@ -10,7 +10,7 @@ const titles = [
   'Popeye the Sailor Meets Sindbad the Sailor'
 ];
 
-const totalRatings = ['4.5', '4.7', '4.9', '5.2', '5.4', '5.7', '5.9', '6.0', '6.4', '6,8', '7.1', '7.3', '7.5'];
+const totalRatings = ['4.5', '4.7', '4.9', '5.2', '5.4', '5.7', '5.9', '6.0', '6.4', '6,8', '7.1', '7.3', '7.5', '7.8'];
 
 const ageRatings = ['0', '3', '6', '10', '14', '16', '18'];
 
@@ -30,12 +30,19 @@ const genres = ['Comedy', 'Lyric', 'Drama', 'Western'];
 
 const dates = [
   '1926-02-04T00:00:00.000Z',
-  '1928-04-07T00:00:00.000Z',
+  '1927-01-05T00:00:00.000Z',
+  '1928-04-02T00:00:00.000Z',
+  '1929-12-04T00:00:00.000Z',
+  '1930-03-06T00:00:00.000Z',
+  '1931-11-07T00:00:00.000Z',
   '1932-06-14T00:00:00.000Z',
   '1935-07-18T00:00:00.000Z',
   '1938-09-26T00:00:00.000Z',
   '1942-12-31T00:00:00.000Z',
   '1946-08-25T00:00:00.000Z',
+  '1947-02-16T00:00:00.000Z',
+  '1949-07-23T00:00:00.000Z',
+  '1950-12-12T00:00:00.000Z',
 ];
 
 const descriptions = [
@@ -48,7 +55,8 @@ const descriptions = [
 const isTrue = [true, false];
 
 export const generateFilms = () => ({
-  'id': nanoid(),
+  // 'id': nanoid(),
+  'id': randomNumber(),
   'comments': [
     '56', '73', '83', '3'
   ],

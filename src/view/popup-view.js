@@ -1,5 +1,5 @@
 import AbstructView from '../framework/view/abstract-view.js';
-import { humanizeFilmDatePopup, humanizeFilmTime, getList } from '../utils/utils.js';
+import { humanizeFilmDatePopup, humanizeFilmTime, getList } from '../utils/film.js';
 
 const createPopupTemplate = (film) => {
   const {
