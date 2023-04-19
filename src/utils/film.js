@@ -15,7 +15,6 @@ const humanizeFilmTime = (time) => {
 const getList = (array) => array.reduce((acc, el) => `${acc}, ${el}`);
 const getGenres = (array) => array.map((item) => `<span class="film-details__genre">${item}</span>`);
 const randomItem = (array) => array[Math.floor(Math.random() * array.length)];
-const randomNumber = () => Math.trunc(Math.random() * 10000000000);
 const capitalizeFirstLetter = (item) => item.charAt(0).toUpperCase() + item.slice(1);
 
 const getWeigthForNullSortItem = (filmA, filmB) => {
@@ -52,7 +51,6 @@ export {
   getList,
   getGenres,
   randomItem,
-  randomNumber,
   capitalizeFirstLetter,
   sortFilmDate,
   sortFilmRating,

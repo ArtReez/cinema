@@ -1,7 +1,15 @@
-import AbstructView from '../framework/view/abstract-view.js';
+import AbstructStatefulView from '../framework/view/abstract-stateful-view.js';
 import { humanizeFilmDatePopup, humanizeFilmTime, getList } from '../utils/film.js';
 
-const createPopupTemplate = (film) => {
+const createEmojiTemplate = (emotion) => (
+  `${emotion ? `<img src="./images/emoji/${emotion}.png" width="55" height="55" alt="emoji">` : ''}`
+);
+
+const createCommentInputTemplate = (comment) => (
+  `${comment ? `${comment}` : ''}`
+);
+
+const createPopupTemplate = (data) => {
   const {
     filmInfo: {
       title,
@@ -21,8 +29,10 @@ const createPopupTemplate = (film) => {
       watchlist,
       alreadyWatched,
       favorite,
-    }
-  } = film;
+    },
+    comment,
+    emotion,
+  } = data;
 
   const filmDate = humanizeFilmDatePopup(date);
   const filmTime = humanizeFilmTime(runtime);
@@ -31,6 +41,8 @@ const createPopupTemplate = (film) => {
   const filmGenresName = genre.length > 1 ? 'Generes' : 'Genre';
   const filmGenres = genre.join('');
   const isActiveClassName = (item) => item ? 'film-details__control-button--active' : '';
+  const emojiTemplate = createEmojiTemplate(emotion);
+  const commentInputTemplate = createCommentInputTemplate(comment);
 
   return (
     `<section class="film-details">
@@ -105,65 +117,14 @@ const createPopupTemplate = (film) => {
           <h3 class="film-details__comments-title">Comments <span class="film-details__comments-count">4</span></h3>
 
           <ul class="film-details__comments-list">
-            <li class="film-details__comment">
-              <span class="film-details__comment-emoji">
-                <img src="./images/emoji/smile.png" width="55" height="55" alt="emoji-smile">
-              </span>
-              <div>
-                <p class="film-details__comment-text">Interesting setting and a good cast</p>
-                <p class="film-details__comment-info">
-                  <span class="film-details__comment-author">Tim Macoveev</span>
-                  <span class="film-details__comment-day">2019/12/31 23:59</span>
-                  <button class="film-details__comment-delete">Delete</button>
-                </p>
-              </div>
-            </li>
-            <li class="film-details__comment">
-              <span class="film-details__comment-emoji">
-                <img src="./images/emoji/sleeping.png" width="55" height="55" alt="emoji-sleeping">
-              </span>
-              <div>
-                <p class="film-details__comment-text">Booooooooooring</p>
-                <p class="film-details__comment-info">
-                  <span class="film-details__comment-author">John Doe</span>
-                  <span class="film-details__comment-day">2 days ago</span>
-                  <button class="film-details__comment-delete">Delete</button>
-                </p>
-              </div>
-            </li>
-            <li class="film-details__comment">
-              <span class="film-details__comment-emoji">
-                <img src="./images/emoji/puke.png" width="55" height="55" alt="emoji-puke">
-              </span>
-              <div>
-                <p class="film-details__comment-text">Very very old. Meh</p>
-                <p class="film-details__comment-info">
-                  <span class="film-details__comment-author">John Doe</span>
-                  <span class="film-details__comment-day">2 days ago</span>
-                  <button class="film-details__comment-delete">Delete</button>
-                </p>
-              </div>
-            </li>
-            <li class="film-details__comment">
-              <span class="film-details__comment-emoji">
-                <img src="./images/emoji/angry.png" width="55" height="55" alt="emoji-angry">
-              </span>
-              <div>
-                <p class="film-details__comment-text">Almost two hours? Seriously?</p>
-                <p class="film-details__comment-info">
-                  <span class="film-details__comment-author">John Doe</span>
-                  <span class="film-details__comment-day">Today</span>
-                  <button class="film-details__comment-delete">Delete</button>
-                </p>
-              </div>
-            </li>
+
           </ul>
 
           <div class="film-details__new-comment">
-            <div class="film-details__add-emoji-label"></div>
+            <div class="film-details__add-emoji-label">${emojiTemplate}</div>
 
             <label class="film-details__comment-label">
-              <textarea class="film-details__comment-input" placeholder="Select reaction below and write comment here" name="comment"></textarea>
+              <textarea class="film-details__comment-input" placeholder="Select reaction below and write comment here" name="comment">${commentInputTemplate}</textarea>
             </label>
 
             <div class="film-details__emoji-list">
@@ -195,31 +156,111 @@ const createPopupTemplate = (film) => {
   );
 };
 
-export default class PopupView extends AbstructView {
-  #film = null;
-
+export default class PopupView extends AbstructStatefulView {
   constructor(film) {
     super();
-    this.#film = film;
+    this._state = PopupView.setFilmToState(film);
+    this.#setInnerHandlers();
+    console.log('_state:', this._state);
   }
 
   get template() {
-    return createPopupTemplate(this.#film);
+    return createPopupTemplate(this._state);
   }
 
+  #setInnerHandlers = () => {
+    this.element.addEventListener('scroll', this.#popupScrollHandler);
+    this.element.querySelector('.film-details__comment-input')
+      .addEventListener('input', this.#commentInputHandler);
+    this.element.querySelectorAll('.film-details__emoji-label')
+      .forEach((item) => item.addEventListener('click', this.#emojiClickHandler));
+    this.element.querySelectorAll('.film-details__emoji-item')
+      .forEach((item) => {
+        if (item.value === this._state.emotion) {
+          item.checked = true;
+        }
+      });
+  };
+
+  reset = (film) => {
+    this.updateElement(
+      PopupView.setFilmToState(film)
+    );
+    this._callback.commentsFilm();
+  };
+
+  setCommentsFilmHandler = (callback) => {
+    this._callback.commentsFilm = callback;
+  };
+
+  #popupScrollHandler = (evt) => {
+    evt.preventDefault();
+    this._state.scroll = this.element.scrollTop;
+  };
+
+  #commentInputHandler = (evt) => {
+    evt.preventDefault();
+    this._setState({
+      comment: evt.target.value
+    });
+    this.element.scrollTop = this._state.scroll;
+  };
+
+  #emojiClickHandler = (evt) => {
+    this.updateElement({
+      emotion: evt.target.src.split('/').pop().split('.')[0]
+    });
+    this._callback.commentsFilm();
+    this.element.scrollTop = this._state.scroll;
+  };
+
+  _restoreHandlers = () => {
+    this.#setInnerHandlers();
+    this.setClosedPopupHandler(this._callback.closedPopupClick);
+    this.setWatchListClickHandler(this._callback.watchListClick);
+    this.setAlreadyWatchedClickHandler(this._callback.alreadyWatchedClick);
+    this.setFavoriteClickHandler(this._callback.favoriteClick);
+  };
+
+  static setFilmToState = (film) => ({...film,
+    comment: null,
+    emotion: null,
+    scroll: null,
+  });
+
+  static setStateToFilm = (state) => {
+    const film = {...state};
+
+    // if(!film.isComment) {
+    //   film.comment = null;
+    // }
+
+    // if(!film.isEmotion) {
+    //   film.emotion = null;
+    // }
+
+    delete film.comment;
+    delete film.emotion;
+    delete film.scroll;
+
+    return film;
+  };
+
   setClosedPopupHandler = (callback) => {
-    this._callback.popupClick = callback;
-    this.element.querySelector('.film-details__close-btn').addEventListener('click', this.#closedPopupClickHandler);
+    this._callback.closedPopupClick = callback;
+    this.element.querySelector('.film-details__close-btn')
+      .addEventListener('click', this.#closedPopupClickHandler);
   };
 
   #closedPopupClickHandler = (evt) => {
     evt.preventDefault();
-    this._callback.popupClick();
+    this._callback.closedPopupClick();
   };
 
   setWatchListClickHandler = (callback) => {
     this._callback.watchListClick = callback;
-    this.element.querySelector('.film-details__control-button--watchlist').addEventListener('click', this.#watchlistClickHandler);
+    this.element.querySelector('.film-details__control-button--watchlist')
+      .addEventListener('click', this.#watchlistClickHandler);
   };
 
   #watchlistClickHandler = (evt) => {
@@ -228,18 +269,20 @@ export default class PopupView extends AbstructView {
   };
 
   setAlreadyWatchedClickHandler = (callback) => {
-    this._callback.alreadyWatched = callback;
-    this.element.querySelector('.film-details__control-button--watched').addEventListener('click', this.#alreadyWatchedClickHandler);
+    this._callback.alreadyWatchedClick = callback;
+    this.element.querySelector('.film-details__control-button--watched')
+      .addEventListener('click', this.#alreadyWatchedClickHandler);
   };
 
   #alreadyWatchedClickHandler = (evt) => {
     evt.preventDefault();
-    this._callback.alreadyWatched();
+    this._callback.alreadyWatchedClick();
   };
 
   setFavoriteClickHandler = (callback) => {
     this._callback.favoriteClick = callback;
-    this.element.querySelector('.film-details__control-button--favorite').addEventListener('click', this.#favoriteClickHandler);
+    this.element.querySelector('.film-details__control-button--favorite')
+      .addEventListener('click', this.#favoriteClickHandler);
   };
 
   #favoriteClickHandler = (evt) => {
@@ -247,3 +290,57 @@ export default class PopupView extends AbstructView {
     this._callback.favoriteClick();
   };
 }
+
+
+// {/* <li class="film-details__comment">
+//               <span class="film-details__comment-emoji">
+//                 <img src="./images/emoji/smile.png" width="55" height="55" alt="emoji-smile">
+//               </span>
+//               <div>
+//                 <p class="film-details__comment-text">Interesting setting and a good cast</p>
+//                 <p class="film-details__comment-info">
+//                   <span class="film-details__comment-author">Tim Macoveev</span>
+//                   <span class="film-details__comment-day">2019/12/31 23:59</span>
+//                   <button class="film-details__comment-delete">Delete</button>
+//                 </p>
+//               </div>
+//             </li>
+//             <li class="film-details__comment">
+//               <span class="film-details__comment-emoji">
+//                 <img src="./images/emoji/sleeping.png" width="55" height="55" alt="emoji-sleeping">
+//               </span>
+//               <div>
+//                 <p class="film-details__comment-text">Booooooooooring</p>
+//                 <p class="film-details__comment-info">
+//                   <span class="film-details__comment-author">John Doe</span>
+//                   <span class="film-details__comment-day">2 days ago</span>
+//                   <button class="film-details__comment-delete">Delete</button>
+//                 </p>
+//               </div>
+//             </li>
+//             <li class="film-details__comment">
+//               <span class="film-details__comment-emoji">
+//                 <img src="./images/emoji/puke.png" width="55" height="55" alt="emoji-puke">
+//               </span>
+//               <div>
+//                 <p class="film-details__comment-text">Very very old. Meh</p>
+//                 <p class="film-details__comment-info">
+//                   <span class="film-details__comment-author">John Doe</span>
+//                   <span class="film-details__comment-day">2 days ago</span>
+//                   <button class="film-details__comment-delete">Delete</button>
+//                 </p>
+//               </div>
+//             </li>
+//             <li class="film-details__comment">
+//               <span class="film-details__comment-emoji">
+//                 <img src="./images/emoji/angry.png" width="55" height="55" alt="emoji-angry">
+//               </span>
+//               <div>
+//                 <p class="film-details__comment-text">Almost two hours? Seriously?</p>
+//                 <p class="film-details__comment-info">
+//                   <span class="film-details__comment-author">John Doe</span>
+//                   <span class="film-details__comment-day">Today</span>
+//                   <button class="film-details__comment-delete">Delete</button>
+//                 </p>
+//               </div>
+//             </li> */}
