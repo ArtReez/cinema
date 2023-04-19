@@ -1,4 +1,4 @@
-import { randomItem, randomNumber, getGenres} from '../utils/film.js';
+import { randomItem, getGenres} from '../utils/film.js';
 import { nanoid } from 'nanoid';
 
 const titles = [
@@ -55,8 +55,7 @@ const descriptions = [
 const isTrue = [true, false];
 
 export const generateFilms = () => ({
-  // 'id': nanoid(),
-  'id': randomNumber(),
+  'id': nanoid(),
   'comments': [
     '56', '73', '83', '3'
   ],

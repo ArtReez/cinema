@@ -20,7 +20,7 @@ export default class AppPresenter {
   #filmsContainer = null;
   #filmsModel = null;
   #filmsList = [];
-  #commentsPopup = null;
+  #commentsListFiltered = null;
   #commentsList = [];
 
   #filmsComponent = new FilmsView();
@@ -47,9 +47,9 @@ export default class AppPresenter {
 
   init = () => {
     this.#filmsList = [...this.#filmsModel.films];
-    this.#filmsTopRatedList = [...this.#filmsModel.films];
     this.#sourcedFilmsList = [...this.#filmsModel.films];
     this.#commentsList = [...this.#filmsModel.comments];
+    this.#filmsTopRatedList = [...this.#filmsModel.films];
     this.#renderApp();
     // console.log(this.#filmsList);
     // console.log('init');
@@ -108,11 +108,11 @@ export default class AppPresenter {
   };
 
   #renderFilmCard = (film) => {
-    this.#commentsPopup = this.#commentsList.slice().filter((el) => this.#filmsList[0].comments.includes(el.id));
+    this.#commentsListFiltered = this.#commentsList.slice().filter((el) => this.#filmsList[0].comments.includes(el.id));
+
     const filmPresenter = new FilmPresenter(
       this.#filmsListContainerComponent.element,
-      // this.#filmsListTopRatedContainerComponent.element,
-      this.#commentsPopup,
+      this.#commentsListFiltered,
       this.#handleFilmChange,
       this.#handleModeChange
     );
@@ -169,7 +169,7 @@ export default class AppPresenter {
     // const idFilm = this.#filteredTopRatedFilms(0, 2)[0];
     render(new FilmCardView(idFilm), this.#filmsListTopRatedContainerComponent.element);
     // this.#filteredTopRatedFilms(0, 2);
-    console.log(idFilm);
+    // console.log(idFilm);
     // console.log(this.#renderFilmCard);
     // render(this.#filmsTopRatedList.sort(sortFilmRating).slice(0, 2)[0], this.#filmsListTopRatedContainerComponent.element);
   };

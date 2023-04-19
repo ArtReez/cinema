@@ -10,21 +10,19 @@ const Mode = {
 
 export default class FilmPresenter {
   #filmListContainer = null;
-  // #filmListTopRatedContainer = null;
   #filmCardComponent = null;
   #popupContainer = null;
   #filmPopupComponent = null;
   #commentsContainer = null;
-  #commentsPopup = null;
+  #commentsListFiltered = null;
   #changeData = null;
   #changeMode = null;
   #film = null;
   #mode = Mode.DEFAULT;
 
-  constructor(filmListContainer, commentsPopup, changeData, changeMode) {
+  constructor(filmListContainer, commentsListFiltered, changeData, changeMode) {
     this.#filmListContainer = filmListContainer;
-    // this.#filmListTopRatedContainer = filmListTopRatedContainer;
-    this.#commentsPopup = commentsPopup;
+    this.#commentsListFiltered = commentsListFiltered;
     this.#changeData = changeData;
     this.#changeMode = changeMode;
   }
@@ -37,36 +35,38 @@ export default class FilmPresenter {
     const prevFilmPopupComponent = this.#filmPopupComponent;
 
     this.#filmCardComponent = new FilmCardView(film);
-    this.#filmPopupComponent = new PopupView(film);
-
     this.#filmCardComponent.setOpenPopupHandler(this.#handleFilmCardClick);
-    this.#filmPopupComponent.setClosedPopupHandler(this.#handlePopupClick);
-
     this.#filmCardComponent.setWatchListClickHandler(this.#handleWatchListClick);
     this.#filmCardComponent.setAlreadyWatchedClickHandler(this.#handleAlreadyWatchedClick);
     this.#filmCardComponent.setFavoriteClickHandler(this.#handleFavoriteClick);
+
+    this.#filmPopupComponent = new PopupView(film);
+    this.#filmPopupComponent.setClosedPopupHandler(this.#handleClosedPopupClick);
+    this.#filmPopupComponent.setCommentsFilmHandler(this.#commentsFilm);
     this.#filmPopupComponent.setWatchListClickHandler(this.#handleWatchListClick);
     this.#filmPopupComponent.setAlreadyWatchedClickHandler(this.#handleAlreadyWatchedClick);
     this.#filmPopupComponent.setFavoriteClickHandler(this.#handleFavoriteClick);
 
     if (prevFilmCardComponent === null || prevFilmPopupComponent === null) {
       render(this.#filmCardComponent, this.#filmListContainer);
+      this.#commentsFilm();
       // render(this.#filmCardComponent, this.#filmListTopRatedContainer);
-      console.log('prevComponent - NULL');
+      console.log('prevComponent === NULL');
       return;
     }
 
     if (this.#mode === Mode.DEFAULT) {
-      console.log('Card Element mode:', this.#mode);
       replace(this.#filmCardComponent, prevFilmCardComponent);
+      console.log('Card Element DEFAULT mode =>:', this.#mode);
+      this.#commentsFilm();
       // replace(this.#filmPopupComponent, prevFilmPopupComponent);
     }
 
     if (this.#mode === Mode.POPUP) {
-      replace(this.#filmPopupComponent, prevFilmPopupComponent);
       replace(this.#filmCardComponent, prevFilmCardComponent);
+      replace(this.#filmPopupComponent, prevFilmPopupComponent);
       this.#commentsFilm();
-      console.log('Popup Element mode:', this.#mode);
+      console.log('Popup Element POPUP mode =>:', this.#mode);
     }
 
     remove(prevFilmCardComponent);
@@ -80,23 +80,22 @@ export default class FilmPresenter {
 
   resetView = () => {
     if (this.#mode !== Mode.DEFAULT) {
-      console.log('reseted mode:', this.#mode);
+      this.#filmPopupComponent.reset(this.#film);
       this.#closedPopup();
+      console.log('reseted mode:', this.#mode);
     }
   };
 
   #commentsFilm = () => {
     this.#commentsContainer = this.#filmPopupComponent.element.querySelector('.film-details__comments-list');
-    this.#commentsContainer.innerHTML = '';
-    this.#commentsPopup.forEach((comment) => render(new PopupCommentView(comment), this.#commentsContainer));
+    this.#commentsListFiltered.forEach((comment) => render(new PopupCommentView(comment), this.#commentsContainer));
   };
 
   #openPopup = () => {
     if (this.#mode === Mode.POPUP) {
       return;
     }
-    this.#popupContainer.append(this.#filmPopupComponent.element);
-    this.#commentsFilm();
+    render(this.#filmPopupComponent, this.#popupContainer);
     this.#changeMode();
     this.#mode = Mode.POPUP;
     console.log('openPopup mode:', this.#mode);
@@ -113,6 +112,7 @@ export default class FilmPresenter {
   #escKeyDownHandler = (evt) => {
     if (evt.key === 'Escape' || evt.key === 'Esc') {
       evt.preventDefault();
+      this.#filmPopupComponent.reset(this.#film);
       this.#closedPopup();
     }
   };
@@ -123,7 +123,7 @@ export default class FilmPresenter {
     document.addEventListener('keydown', this.#escKeyDownHandler);
   };
 
-  #handlePopupClick = () => {
+  #handleClosedPopupClick = () => {
     this.#changeMode();
   };
 
