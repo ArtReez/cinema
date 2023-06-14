@@ -1,14 +1,12 @@
-const updateItem = (items, update) => {
-  const index = items.findIndex((item) => item.id === update.id);
+const COUNT_ID = 500;
+const arrayId = [];
 
-  if (index === -1) {
-    return items;
+(function() {
+  for (let i = 1; i <= COUNT_ID; i++) {
+    arrayId.push(i);
   }
 
-  return [
-    ...items.slice(0, index),
-    update,
-    ...items.slice(index + 1)
-  ];
-};
-export { updateItem };
+  arrayId.sort(() => Math.random() - 0.5);
+})();
+
+export { arrayId };
