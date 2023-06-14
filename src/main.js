@@ -1,21 +1,20 @@
-import UserProfileView from './view/user-profile-view.js';
-import NavigationView from './view/nav-view.js';
-import FooterStatView from './view/footer-stat-view.js';
-import AppPresenter from './presenter/app-presenter.js';
+import Presenter from './presenter/presenter.js';
+import FilterPresenter from './presenter/filter-presenter.js';
 import FilmsModel from './model/films-model.js';
-import { render } from './framework/render.js';
-import { generateFilter } from './mock/filter.js';
+import FilterModel from './model/filter-model.js';
+import CommentsModel from './model/comments-model.js';
+
 
 const siteHeaderElement = document.querySelector('.header');
 const siteMainElement = document.querySelector('.main');
 const siteFooterStatElement = document.querySelector('.footer__statistics');
 
+const filterModel = new FilterModel();
 const filmsModel = new FilmsModel();
-const filters = generateFilter(filmsModel.films);
-const appPresenter = new AppPresenter(siteMainElement, filmsModel);
+const commentsModel = new CommentsModel();
 
-render(new UserProfileView(), siteHeaderElement);
-render(new NavigationView(filters), siteMainElement);
-render(new FooterStatView(), siteFooterStatElement);
+const filterPresenter = new FilterPresenter(siteMainElement, filterModel, filmsModel);
+const presenter = new Presenter(siteHeaderElement, siteMainElement, siteFooterStatElement, filterModel, filmsModel, commentsModel);
 
-appPresenter.init();
+filterPresenter.init();
+presenter.init();

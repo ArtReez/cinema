@@ -1,5 +1,8 @@
-import { randomItem, getGenres} from '../utils/film.js';
+import { randomItem, randomInteger, getGenres} from '../utils/film.js';
+import { arrayId } from '../utils/common.js';
 import { nanoid } from 'nanoid';
+
+const array = [...arrayId];
 
 const titles = [
   'A Little Pony Without The Carpet',
@@ -10,9 +13,10 @@ const titles = [
   'Popeye the Sailor Meets Sindbad the Sailor'
 ];
 
-const totalRatings = ['4.5', '4.7', '4.9', '5.2', '5.4', '5.7', '5.9', '6.0', '6.4', '6,8', '7.1', '7.3', '7.5', '7.8'];
+const totalRatings = [4.5, 4.7, 4.9, 5.2, 5.4, 5.7, 5.9, 6, 6.1, 6.4, 6.8, 7.1, 7.3, 7.5, 7.8, 8];
+// const totalRatings = [0, 0, 0, 0];
 
-const ageRatings = ['0', '3', '6', '10', '14', '16', '18'];
+const ageRatings = [0, 3, 6, 10, 14, 16, 18];
 
 const posters = [
   'made-for-each-other',
@@ -54,16 +58,22 @@ const descriptions = [
 
 const isTrue = [true, false];
 
+const getId = () => {
+  if (array.length > 0) {
+    return array.pop().toString();
+  }
+  return 'no ID';
+};
+
 export const generateFilms = () => ({
   'id': nanoid(),
-  'comments': [
-    '56', '73', '83', '3'
-  ],
+  'comments': Array.from({length: randomInteger(1, 8)}, getId),
+  // 'comments': [],
   'filmInfo': {
     'title': randomItem(titles),
     'alternativeTitle': randomItem(titles),
-    'totalRating': randomItem(totalRatings),
-    'poster': `images/posters/${  randomItem(posters)  }.jpg`,
+    'totalRating': randomItem(totalRatings).toPrecision(2),
+    'poster': `images/posters/${randomItem(posters)}.jpg`,
     'ageRating': randomItem(ageRatings),
     'director': 'Tom Ford',
     'writers': [

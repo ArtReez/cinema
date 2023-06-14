@@ -5,17 +5,22 @@ var relativeTime = require('dayjs/plugin/relativeTime');
 dayjs.extend(relativeTime);
 
 const humanizeFilmDate = (date) => dayjs(date).format('YYYY');
+
 const humanizeFilmDatePopup = (date) => dayjs(date).format('DD MMMM YYYY');
+
 const humanizeFilmDateCommentsPopup = (date) => dayjs().to(dayjs(date));
+
 const humanizeFilmTime = (time) => {
   const hours = time >= 60 ? (time / 60).toFixed() : '';
   const minutes = time % 60;
   return hours ? `${hours}h ${minutes}m` : `${minutes}m`;
 };
+
 const getList = (array) => array.reduce((acc, el) => `${acc}, ${el}`);
+
 const getGenres = (array) => array.map((item) => `<span class="film-details__genre">${item}</span>`);
-const randomItem = (array) => array[Math.floor(Math.random() * array.length)];
-const capitalizeFirstLetter = (item) => item.charAt(0).toUpperCase() + item.slice(1);
+
+const randomItem = (array) => array[parseInt(Math.random() * array.length, 10)];
 
 const getWeigthForNullSortItem = (filmA, filmB) => {
   if (filmA === null && filmB === null) {
@@ -39,9 +44,19 @@ const sortFilmDate = (filmA, filmB) => {
 };
 
 const sortFilmRating = (filmA, filmB) => {
-  const weigth = getWeigthForNullSortItem(+filmA.filmInfo.totalRating, +filmB.filmInfo.totalRating);
-  return weigth ?? dayjs(filmB.filmInfo.totalRating).diff(filmA.filmInfo.totalRating);
+  const weigth = getWeigthForNullSortItem(filmA.filmInfo.totalRating, filmB.filmInfo.totalRating);
+  return weigth ?? (filmB.filmInfo.totalRating - filmA.filmInfo.totalRating);
 };
+
+const sortFilmComments = (filmA, filmB) => {
+  const weigth = getWeigthForNullSortItem(filmA.comments.length, filmB.comments.length);
+  return weigth ?? (filmB.comments.length - filmA.comments.length);
+};
+
+function randomInteger(min=1, max=100) {
+  const number = min + Math.random() * (max + 1 - min);
+  return Math.floor(number);
+}
 
 export {
   humanizeFilmDate,
@@ -51,7 +66,8 @@ export {
   getList,
   getGenres,
   randomItem,
-  capitalizeFirstLetter,
   sortFilmDate,
   sortFilmRating,
+  sortFilmComments,
+  randomInteger,
 };
