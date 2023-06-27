@@ -13,21 +13,25 @@ const SortType = {
 
 const UserAction = {
   UPDATE_FILM: 'UPDATE_FILM',
+  GET_COMMENTS: 'GET_COMMENTS',
   ADD_COMMENT: 'ADD_COMMENT',
   DELETE_COMMENT: 'DELETE_COMMENT',
 };
 
 const UpdateType = {
+  COMMENTS: 'COMMENTS',
   COMMENT: 'COMMENT',
   PATCH: 'PATCH',
   MINOR: 'MINOR',
   MAJOR: 'MAJOR',
+  INIT: 'INIT',
 };
 
 const Container ={
   FILMS: 'FILMS',
   TOP_RATED: 'TOP_RATED',
   MOST_COMMENTED: 'MOST_COMMENTED',
+  POPUP: 'POPUP',
 };
 
 const Mode = {
@@ -51,4 +55,9 @@ const Title = {
   MOST_COMMENTED: 'MOST_COMMENTED',
 };
 
-export {FilterType, SortType, UserAction, UpdateType, Container, Mode, Comment, FilmsList, Title};
+const Method = {
+  GET: 'GET',
+  PUT: 'PUT'
+};
+
+export {FilterType, SortType, UserAction, UpdateType, Container, Mode, Comment, FilmsList, Title, Method};

@@ -16,6 +16,8 @@ const humanizeFilmTime = (time) => {
   return hours ? `${hours}h ${minutes}m` : `${minutes}m`;
 };
 
+const getPoster = (url) => `${url.substring(0, url.lastIndexOf('.'))}.jpg`;
+
 const getList = (array) => array.reduce((acc, el) => `${acc}, ${el}`);
 
 const getGenres = (array) => array.map((item) => `<span class="film-details__genre">${item}</span>`);
@@ -63,6 +65,7 @@ export {
   humanizeFilmTime,
   humanizeFilmDatePopup,
   humanizeFilmDateCommentsPopup,
+  getPoster,
   getList,
   getGenres,
   randomItem,

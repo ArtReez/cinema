@@ -15,7 +15,8 @@ export default class FilmPresenter {
   #popupContainer = null;
   #filmPopupComponent = null;
   #prevFilmPopupComponent = null;
-  #commentsList = null;
+  #commentsModel = null;
+  #commentsList = [];
   #changeData = null;
   #changeMode = null;
   #film = null;
@@ -31,13 +32,13 @@ export default class FilmPresenter {
     filmListContainer,
     filmListTopRatedContainer,
     filmListMostCommentedContainer,
-    commentsModelComments,
+    commentsModel,
     handleViewAction,
     handleModeChange) {
     this.#filmListContainer = filmListContainer;
     this.#filmListTopRatedContainer = filmListTopRatedContainer;
     this.#filmListMostCommentedContainer = filmListMostCommentedContainer;
-    this.#commentsList = commentsModelComments;
+    this.#commentsModel = commentsModel;
     this.#changeData = handleViewAction;
     this.#changeMode = handleModeChange;
   }
@@ -46,16 +47,17 @@ export default class FilmPresenter {
     this.#film = film;
     this.#popupContainer = document.body;
 
+
     this.#prevFilmPopupComponent = this.#filmPopupComponent;
     this.#filmPopupComponent = new PopupView(film, this.#commentsList);
     this.#filmPopupComponent.setClosedPopupHandler(this.#handleClosedPopupClick);
-    this.#filmPopupComponent.setWatchListClickHandler(this.#handleWatchListClick);
-    this.#filmPopupComponent.setAlreadyWatchedClickHandler(this.#handleAlreadyWatchedClick);
-    this.#filmPopupComponent.setFavoriteClickHandler(this.#handleFavoriteClick);
     this.#filmPopupComponent.setAddCommentSubmitHandler(this.#handleAddCommentSubmit);
     this.#filmPopupComponent.setDeleteCommentClickHandler(this.#handleDeleteCommentClick);
     this.#filmPopupComponent.setUpdateCommentHandler(this.#handleUpdateComment);
     this.#filmPopupComponent.setScrollPopupHandler(this.#handleScrollPopup);
+    this.#filmPopupComponent.setWatchListClickHandler(this.#handleWatchListClick);
+    this.#filmPopupComponent.setAlreadyWatchedClickHandler(this.#handleAlreadyWatchedClick);
+    this.#filmPopupComponent.setFavoriteClickHandler(this.#handleFavoriteClick);
 
     if (this.#mode === Mode.POPUP) {
       replace(this.#filmPopupComponent, this.#prevFilmPopupComponent);
@@ -116,6 +118,21 @@ export default class FilmPresenter {
         remove(this.#prevMostCommentedComponent);
         break;
     }
+    console.log(this.#scrollPopup);
+
+  };
+
+  // #getComments = () => {
+  //   this.#commentsList = this.#commentsModel.comments;
+  // };
+
+  #getComments = async (filmId) => {
+    try {
+      this.#commentsList = await this.#commentsModel.getComments(filmId);
+      console.log('FILM_PRESENTER -> COMMENT_LIST:', this.#commentsList);
+    } catch(err) {
+      console.log(err);
+    }
   };
 
   setComments = (comments) => {
@@ -136,15 +153,8 @@ export default class FilmPresenter {
   resetView = () => {
     if (this.#mode !== Mode.DEFAULT) {
       this.#filmPopupComponent.reset(this.#film);
-
-      // if (this.#prevFilmCardComponent !== null || this.#prevFilmPopupComponent !== null) {
-      //   this.#changeData(
-      //     UserAction.UPDATE_FILM,
-      //     UpdateType.MINOR,
-      //     {...this.#film});
-      // }
-
       this.#closedPopup(); // (NEEDED!!!)
+
       console.log('resetView(POPUP):', this.#mode);
     }
   };
@@ -219,15 +229,26 @@ export default class FilmPresenter {
       this.#closedPopup();
 
       if (commentStatus === Comment.EDITED) {
-        this.#handleUpdateComment(commentStatus);
+        this.#handleUpdateComment();
         commentStatus = Comment.DEFAULT;
       }
     }
   };
 
-  #handleFilmCardClick = () => {
-    this.#changeMode(); // reset all filmPresenters opened POPUP (NEEDED!!!)
-    this.#openPopup();
+  #handleFilmCardClick = async () => {
+    try {
+      await this.#getComments(this.#film.id);
+      this.#changeMode(); // reset all filmPresenters opened POPUP (NEEDED!!!)
+      this.init(this.#film);
+      // this.#changeData(
+      //   UserAction.GET_COMMENTS,
+      //   UpdateType.COMMENTS,
+      //   this.#film.id,
+      // );
+      this.#openPopup();
+    } catch(err) {
+      throw new Error('Can\'t get film ID');
+    }
   };
 
   #handleClosedPopupClick = () => {

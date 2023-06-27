@@ -6,12 +6,13 @@ import FilmsListContainerView from '../view/films-list-container-view.js';
 import LoadMoreButtonView from '../view/load-more-button-view.js';
 import SortView from '../view/sort-view.js';
 import NoFilmsListView from '../view/no-films-list-view.js';
+import LoadingView from '../view/loading-view.js';
 import FilmPresenter from './film-presenter.js';
 import UserProfileView from '../view/user-profile-view.js';
 import FooterStatView from '../view/footer-stat-view.js';
 import { SortType, UserAction, UpdateType, FilterType, Container, FilmsList, Title } from '../const.js';
 import { sortFilmDate, sortFilmRating, sortFilmComments } from '../utils/film.js';
-import { render, remove, replace } from '../framework/render.js';
+import { render, remove, replace, RenderPosition } from '../framework/render.js';
 import { filter } from '../filter.js';
 
 const FILM_COUNT_PER_STEP = 5;
@@ -26,6 +27,7 @@ export default class Presenter {
   #loadMoreButtonComponent = null;
   #sortComponent = null;
   #noFilmComponent = null;
+  #loadingComponent = null;
   #userProfileComponent = null;
   #prevUserProfileComponent = null;
   #prevFooterStatComponent = null;
@@ -50,6 +52,7 @@ export default class Presenter {
   #filmPresenters = new Map();
   #filmPresentersTopRated = new Map();
   #filmPresentersMostCommented = new Map();
+  #isLoading = true;
 
   constructor(headerContainer, filmsContainer, footerContainer, filterModel, filmsModel, commentsModel) {
     this.#headerContainer = headerContainer;
@@ -90,6 +93,9 @@ export default class Presenter {
       case UserAction.UPDATE_FILM:
         this.#filmsModel.updateFilm(updateType, update);
         break;
+      case UserAction.GET_COMMENTS:
+        this.#commentsModel.getComments(updateType, update);
+        break;
       case UserAction.ADD_COMMENT:
         this.#commentsModel.addComment(updateType, update);
         break;
@@ -111,6 +117,9 @@ export default class Presenter {
         this.#filmPresentersTopRated.forEach((item) => item.setComments(data));
         this.#filmPresentersMostCommented.forEach((item) => item.setComments(data));
         break;
+      case UpdateType.COMMENTS:
+        this.#filmPresenters.get(data.id)?.init(data);
+        break;
       case UpdateType.PATCH:
         this.#filmPresenters.get(data.id)?.init(data, Container.FILMS);
         this.#filmPresentersTopRated.get(data.id)?.init(data, Container.TOP_RATED);
@@ -122,6 +131,11 @@ export default class Presenter {
         break;
       case UpdateType.MAJOR:
         this.#clearApp({resetRenderedFilmCount: true, resetSortType: true});
+        this.#renderApp();
+        break;
+      case UpdateType.INIT:
+        this.#isLoading = false;
+        remove(this.#loadingComponent);
         this.#renderApp();
         break;
     }
@@ -148,7 +162,7 @@ export default class Presenter {
       this.#filmsListContainerComponent.element,
       this.#filmsListTopRatedContainerComponent.element,
       this.#filmsListMostCommentedContainerComponent.element,
-      this.#commentsModel.comments,
+      this.#commentsModel,
       this.#handleViewAction,
       this.#handleModeChange,
     );
@@ -173,10 +187,20 @@ export default class Presenter {
     films.forEach((film) => this.#renderFilmCard(film, container));
   };
 
+  #renderLoading = () => {
+    render(this.#filmsComponent, this.#filmsContainer);
+    render(this.#filmsListComponent, this.#filmsComponent.element);
+    this.#loadingComponent = new LoadingView();
+    render(this.#loadingComponent, this.#filmsListComponent.element, RenderPosition.AFTERBEGIN);
+  };
+
   #renderNoFilms = () => {
     render(this.#filmsComponent, this.#filmsContainer);
     this.#noFilmComponent = new NoFilmsListView(this.#filterType);
     render(this.#noFilmComponent, this.#filmsComponent.element);
+    remove(this.#filmsListComponent);
+    remove(this.#filmsListTopRatedComponent);
+    remove(this.#filmsListMostCommentedComponent);
   };
 
   #renderUserProfile = () => {
@@ -213,13 +237,15 @@ export default class Presenter {
   #handleLoadMoreButtonClick = () => {
     const filmCount = this.films.length;
     console.log('FILM_COUNT', filmCount);
+
     const newRenderedFilmCount = Math.min(filmCount, this.#renderedFilmCount + FILM_COUNT_PER_STEP);
     const films = this.films.slice(this.#renderedFilmCount, newRenderedFilmCount);
 
     console.log('RENDERED_FILM_COUNT', this.#renderedFilmCount);
-    this.#renderFilms(films, 'FILMS');
-    // this.#renderFilms(films, 'TOPRATED');
+
+    this.#renderFilms(films, Container.FILMS);
     this.#renderedFilmCount = newRenderedFilmCount;
+
     console.log('NEW_RENDERED_FILM_COUNT', this.#renderedFilmCount);
 
     if (this.#renderedFilmCount >= filmCount) {
@@ -230,8 +256,6 @@ export default class Presenter {
   #renderTopRated = () => {
     const isTopRated = this.#filmsModel.films.every((item) => item.filmInfo.totalRating !== '0.0');
     const filmsTopRated = this.#filmsModel.films.slice().sort(sortFilmRating).slice(0, 2);
-    console.log(filmsTopRated);
-
     render(this.#filmsListTopRatedComponent, this.#filmsComponent.element);
 
     if (isTopRated) {
@@ -244,7 +268,6 @@ export default class Presenter {
   #renderMostCommented = () => {
     const isMostCommented = this.#filmsModel.films.every((item) => item.comments.length !== 0);
     const filmsMostCommented = this.#filmsModel.films.slice().sort(sortFilmComments).slice(0, 2);
-
     render(this.#filmsListMostCommentedComponent, this.#filmsComponent.element);
 
     if (isMostCommented) {
@@ -260,7 +283,11 @@ export default class Presenter {
 
     if (this.#prevFooterStatComponent === null) {
       render(this.#footerStatComponent, this.#footerContainer);
+      return;
     }
+
+    replace(this.#footerStatComponent, this.#prevFooterStatComponent);
+    remove(this.#prevFooterStatComponent);
   };
 
   #renderApp = () => {
@@ -268,6 +295,11 @@ export default class Presenter {
     const filmCount = films.length;
 
     this.#renderUserProfile();
+
+    if (this.#isLoading) {
+      this.#renderLoading();
+      return;
+    }
 
     if (filmCount === 0) {
       this.#renderNoFilms();
@@ -302,6 +334,7 @@ export default class Presenter {
 
     remove(this.#sortComponent);
     remove(this.#noFilmComponent);
+    remove(this.#loadingComponent);
     remove(this.#loadMoreButtonComponent);
 
     if (resetRenderedFilmCount) {

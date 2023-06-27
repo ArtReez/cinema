@@ -1,6 +1,6 @@
 /* eslint-disable no-console */
 import AbstructStatefulView from '../framework/view/abstract-stateful-view.js';
-import { humanizeFilmDatePopup, humanizeFilmDateCommentsPopup, humanizeFilmTime, getList } from '../utils/film.js';
+import { humanizeFilmDatePopup, humanizeFilmDateCommentsPopup, humanizeFilmTime, getList, getPoster } from '../utils/film.js';
 import { nanoid } from 'nanoid';
 import { Comment } from '../const.js';
 import he from 'he';
@@ -33,6 +33,7 @@ const createCommentInputTemplate = (comment) => (comment ? `${comment}` : '');
 
 const createPopupTemplate = (state, commentsList) => {
   const {
+    // id,
     comments,
     filmInfo: {
       title,
@@ -59,16 +60,53 @@ const createPopupTemplate = (state, commentsList) => {
 
   const filmDate = humanizeFilmDatePopup(date);
   const filmTime = humanizeFilmTime(runtime);
+  const filmPoster = getPoster(poster);
   const filmWrites = getList(writers);
   const filmActors = getList(actors);
+  const filmRating = totalRating.toFixed(1);
   const filmGenresName = genre.length > 1 ? 'Generes' : 'Genre';
-  const filmGenres = genre.join('');
+  const filmGenres = genre.map((item) => `<span class="film-details__genre">${item}</span>`).join('');
   const isActiveClassName = (item) => item ? 'film-details__control-button--active' : '';
   const emojiTemplate = createEmojiTemplate(emotion);
   const commentInputTemplate = createCommentInputTemplate(comment);
 
-  const commentsFilmFiltered = commentsList.filter((item) => comments.includes(item.id));
-  const commentsFilm = commentsFilmFiltered.map((userComment) => createPopupCommentTemplate(userComment)).join('');
+  // const commentsFilmFiltered = commentsList.filter((item) => comments.includes(item.id));
+  // const commentsFilm = commentsFilmFiltered.map((userComment) => createPopupCommentTemplate(userComment)).join('');
+
+  // let commentsFilm;
+
+  // const getCommentsFilm = async () => {
+  //   // console.log(commentsList);
+
+  //   try {
+  //     const commentsFilmCurrent = await commentsList.getComments(id);
+  //     // console.log(commentsFilmCurrent);
+
+  //     commentsFilm = commentsFilmCurrent.map((userComment) => createPopupCommentTemplate(userComment)).join('');
+  //     // console.log(commentsFilm);
+
+  //     // console.log('FILM_ID:', id, 'LI:', list);
+  //     return commentsFilm;
+  //   } catch(err) {
+  //     console.log(err);
+  //   }
+  // };
+
+  // const getCommentsFilm = () => {
+  //   console.log(commentsList);
+  //   const comments = commentsList.getComments(id);
+  //   console.log(comments);
+  //   const list = comments.map((userComment) => createPopupCommentTemplate(userComment)).join('');
+  //   return list;
+  // };
+
+  // getCommentsFilm().then((el) => console.log(el));
+  // console.log(commentsFilm);
+
+  // getCommentsFilm();
+  // console.log(commentsList);
+
+  const commentsFilm = commentsList.map((userComment) => createPopupCommentTemplate(userComment)).join('');
 
   return (
     `<section class="film-details">
@@ -79,7 +117,7 @@ const createPopupTemplate = (state, commentsList) => {
         </div>
         <div class="film-details__info-wrap">
           <div class="film-details__poster">
-            <img class="film-details__poster-img" src="./${poster}" alt="">
+            <img class="film-details__poster-img" src="./${filmPoster}" alt="">
 
             <p class="film-details__age">${ageRating}+</p>
           </div>
@@ -92,7 +130,7 @@ const createPopupTemplate = (state, commentsList) => {
               </div>
 
               <div class="film-details__rating">
-                <p class="film-details__total-rating">${totalRating}</p>
+                <p class="film-details__total-rating">${filmRating}</p>
               </div>
             </div>
 
@@ -140,7 +178,7 @@ const createPopupTemplate = (state, commentsList) => {
 
       <div class="film-details__bottom-container">
         <section class="film-details__comments-wrap">
-          <h3 class="film-details__comments-title">Comments <span class="film-details__comments-count">${commentsFilmFiltered.length}</span></h3>
+          <h3 class="film-details__comments-title">Comments <span class="film-details__comments-count">${comments.length}</span></h3>
 
           <ul class="film-details__comments-list">${commentsFilm}</ul>
 
@@ -184,18 +222,33 @@ let commentStatus = Comment.DEFAULT;
 
 export default class PopupView extends AbstructStatefulView {
   #scroll = null;
-  #commentsList = null;
+  #commentsList = [];
+  #comments = null;
 
   constructor(film, comments) {
     super();
     this._state = PopupView.setFilmToState(film);
     this.#commentsList = comments;
+    // console.log(this.#commentsList);
+    // this.#getComments(film.id);
+    // this.#comments.getComments(film.id).then((el) => console.log(el));
     this.#setInnerHandlers();
   }
 
   get template() {
+    console.log('GET_TEMPLATE -> COMMENTS_LIST:', this.#commentsList);
     return createPopupTemplate(this._state, this.#commentsList);
   }
+
+  // #getComments = async (filmId) => {
+  //   try {
+  //     const commentsList = await this.#comments.getComments(filmId);
+  //     this.#commentsList = commentsList;
+  //     console.log(this.#commentsList);
+  //   } catch(err) {
+  //     console.log(err);
+  //   }
+  // };
 
   #setInnerHandlers = () => {
     this.element.querySelector('.film-details__comment-input')
