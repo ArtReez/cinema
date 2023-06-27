@@ -1,5 +1,5 @@
 import AbstractView from '../framework/view/abstract-view.js';
-import {humanizeFilmDate, humanizeFilmTime} from '../utils/film';
+import {humanizeFilmDate, humanizeFilmTime, getPoster} from '../utils/film';
 
 const createFilmCardTemplate = (film) => {
   const {
@@ -22,6 +22,8 @@ const createFilmCardTemplate = (film) => {
 
   const releaseDate = humanizeFilmDate(date);
   const filmDuration = humanizeFilmTime(runtime);
+  const filmPoster = getPoster(poster);
+  const filmRating = totalRating.toFixed(1);
   const cutDescription = description.slice(0, 139).concat('...');
   const isActiveClassName = (item) => item ? 'film-card__controls-item--active' : '';
 
@@ -29,13 +31,13 @@ const createFilmCardTemplate = (film) => {
     `<article class="film-card">
     <a class="film-card__link">
     <h3 class="film-card__title">${title}</h3>
-    <p class="film-card__rating">${totalRating}</p>
+    <p class="film-card__rating">${filmRating}</p>
     <p class="film-card__info">
       <span class="film-card__year">${releaseDate}</span>
       <span class="film-card__duration">${filmDuration}</span>
       <span class="film-card__genre">${genre[0]}</span>
     </p>
-    <img src="./${poster}" alt="" class="film-card__poster">
+    <img src="./${filmPoster}" alt="" class="film-card__poster">
     <p class="film-card__description">${cutDescription}</p>
     <span class="film-card__comments">${comments.length} comments</span>
     </a>
