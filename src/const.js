@@ -19,12 +19,12 @@ const UserAction = {
 };
 
 const UpdateType = {
-  COMMENTS: 'COMMENTS',
   COMMENT: 'COMMENT',
   PATCH: 'PATCH',
   MINOR: 'MINOR',
   MAJOR: 'MAJOR',
   INIT: 'INIT',
+  MOST_COMMENTED: 'MOST_COMMENTED',
 };
 
 const Container ={
@@ -57,7 +57,9 @@ const Title = {
 
 const Method = {
   GET: 'GET',
-  PUT: 'PUT'
+  PUT: 'PUT',
+  DELETE: 'DELETE',
+  POST: 'POST',
 };
 
 export {FilterType, SortType, UserAction, UpdateType, Container, Mode, Comment, FilmsList, Title, Method};

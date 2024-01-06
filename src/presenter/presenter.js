@@ -10,12 +10,17 @@ import LoadingView from '../view/loading-view.js';
 import FilmPresenter from './film-presenter.js';
 import UserProfileView from '../view/user-profile-view.js';
 import FooterStatView from '../view/footer-stat-view.js';
+import UiBlocker from '../framework/ui-blocker/ui-blocker.js';
 import { SortType, UserAction, UpdateType, FilterType, Container, FilmsList, Title } from '../const.js';
 import { sortFilmDate, sortFilmRating, sortFilmComments } from '../utils/film.js';
 import { render, remove, replace, RenderPosition } from '../framework/render.js';
 import { filter } from '../filter.js';
 
 const FILM_COUNT_PER_STEP = 5;
+const TimeLimit = {
+  LOWER_LIMIT: 350,
+  UPPER_LIMIT: 1000,
+};
 
 export default class Presenter {
   #filmsContainer = null;
@@ -53,6 +58,7 @@ export default class Presenter {
   #filmPresentersTopRated = new Map();
   #filmPresentersMostCommented = new Map();
   #isLoading = true;
+  #uiBlocker = new UiBlocker(TimeLimit.LOWER_LIMIT, TimeLimit.UPPER_LIMIT);
 
   constructor(headerContainer, filmsContainer, footerContainer, filterModel, filmsModel, commentsModel) {
     this.#headerContainer = headerContainer;
@@ -86,26 +92,49 @@ export default class Presenter {
     this.#renderApp();
   };
 
-  #handleViewAction = (actionType, updateType, update) => {
-    console.log('HANDLE_VIEW_ACTION -> ACTION_TYPE:', actionType, 'UPDATE_TYPE:', updateType, 'PAYLOAD:', update);
+  #handleViewAction = async (actionType, updateType, film, comment) => {
+    console.log(
+      'HANDLE_VIEW_ACTION -> ACTION_TYPE:', actionType,
+      'UPDATE_TYPE:', updateType,
+      'PAYLOAD:', film, comment
+    );
+
+    this.#uiBlocker.block();
 
     switch (actionType) {
       case UserAction.UPDATE_FILM:
-        this.#filmsModel.updateFilm(updateType, update);
-        break;
-      case UserAction.GET_COMMENTS:
-        this.#commentsModel.getComments(updateType, update);
+        try {
+          await this.#filmsModel.updateFilm(updateType, film);
+        } catch (err) {
+          this.#filmPresenters.get(film.id)?.setAbording();
+          this.#filmPresentersTopRated.get(film.id)?.setAbording();
+          this.#filmPresentersMostCommented.get(film.id)?.setAbording();
+        }
         break;
       case UserAction.ADD_COMMENT:
-        this.#commentsModel.addComment(updateType, update);
+        try {
+          await this.#commentsModel.addComment(updateType, film, comment);
+        } catch (err) {
+          this.#filmPresenters.get(film.id)?.setAbording();
+          this.#filmPresentersTopRated.get(film.id)?.setAbording();
+          this.#filmPresentersMostCommented.get(film.id)?.setAbording();
+        }
         break;
       case UserAction.DELETE_COMMENT:
-        this.#commentsModel.deleteComment(updateType, update);
-        break;
-      case UserAction.UPDATE_COMMENT:
-        this.#commentsModel.updateComment(updateType);
+        this.#filmPresenters.get(film.id)?.setDeleting();
+        this.#filmPresentersTopRated.get(film.id)?.setDeleting();
+        this.#filmPresentersMostCommented.get(film.id)?.setDeleting();
+        try {
+          await this.#commentsModel.deleteComment(updateType, film, comment);
+        } catch (err) {
+          this.#filmPresenters.get(film.id)?.setAbording();
+          this.#filmPresentersTopRated.get(film.id)?.setAbording();
+          this.#filmPresentersMostCommented.get(film.id)?.setAbording();
+        }
         break;
     }
+
+    this.#uiBlocker.unblock();
   };
 
   #handleModelEvent = (updateType, data) => {
@@ -113,17 +142,15 @@ export default class Presenter {
 
     switch (updateType) {
       case UpdateType.COMMENT:
-        this.#filmPresenters.forEach((item) => item.setComments(data));
-        this.#filmPresentersTopRated.forEach((item) => item.setComments(data));
-        this.#filmPresentersMostCommented.forEach((item) => item.setComments(data));
-        break;
-      case UpdateType.COMMENTS:
-        this.#filmPresenters.get(data.id)?.init(data);
+        this.#filmPresenters.get(data.id)?.getComments(data.id);
+        this.#filmPresentersTopRated.get(data.id)?.getComments(data.id);
+        this.#filmPresentersMostCommented.get(data.id)?.getComments(data.id);
         break;
       case UpdateType.PATCH:
         this.#filmPresenters.get(data.id)?.init(data, Container.FILMS);
         this.#filmPresentersTopRated.get(data.id)?.init(data, Container.TOP_RATED);
         this.#filmPresentersMostCommented.get(data.id)?.init(data, Container.MOST_COMMENTED);
+        this.#renderUserProfile();
         break;
       case UpdateType.MINOR:
         this.#clearApp();
@@ -137,6 +164,10 @@ export default class Presenter {
         this.#isLoading = false;
         remove(this.#loadingComponent);
         this.#renderApp();
+        break;
+      case UpdateType.MOST_COMMENTED:
+        this.#clearMostCommented();
+        this.#reRenderMostCommented();
         break;
     }
   };
@@ -165,6 +196,7 @@ export default class Presenter {
       this.#commentsModel,
       this.#handleViewAction,
       this.#handleModeChange,
+      this.#filterType
     );
 
     filmPresenter.init(film, container);
@@ -181,6 +213,8 @@ export default class Presenter {
 
   #handleModeChange = () => {
     this.#filmPresenters.forEach((filmPresenter) => filmPresenter.resetView());
+    this.#filmPresentersTopRated.forEach((filmPresenter) => filmPresenter.resetView());
+    this.#filmPresentersMostCommented.forEach((filmPresenter) => filmPresenter.resetView());
   };
 
   #renderFilms = (films, container) => {
@@ -254,7 +288,7 @@ export default class Presenter {
   };
 
   #renderTopRated = () => {
-    const isTopRated = this.#filmsModel.films.every((item) => item.filmInfo.totalRating !== '0.0');
+    const isTopRated = this.#filmsModel.films.some((item) => item.filmInfo.totalRating !== '0.0');
     const filmsTopRated = this.#filmsModel.films.slice().sort(sortFilmRating).slice(0, 2);
     render(this.#filmsListTopRatedComponent, this.#filmsComponent.element);
 
@@ -266,7 +300,7 @@ export default class Presenter {
   };
 
   #renderMostCommented = () => {
-    const isMostCommented = this.#filmsModel.films.every((item) => item.comments.length !== 0);
+    const isMostCommented = this.#filmsModel.films.some((item) => item.comments.length !== 0);
     const filmsMostCommented = this.#filmsModel.films.slice().sort(sortFilmComments).slice(0, 2);
     render(this.#filmsListMostCommentedComponent, this.#filmsComponent.element);
 
@@ -346,6 +380,15 @@ export default class Presenter {
     if (resetSortType) {
       this.#currentSortType = SortType.DEFAULT;
     }
+  };
+
+  #reRenderMostCommented = () => {
+    this.#renderMostCommented();
+  };
+
+  #clearMostCommented = () => {
+    this.#filmPresentersMostCommented.forEach((presenter) => presenter.destroy());
+    this.#filmPresentersMostCommented.clear();
   };
 }
 

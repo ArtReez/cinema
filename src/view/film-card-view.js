@@ -25,6 +25,7 @@ const createFilmCardTemplate = (film) => {
   const filmPoster = getPoster(poster);
   const filmRating = totalRating.toFixed(1);
   const cutDescription = description.slice(0, 139).concat('...');
+  const filmComments = comments.length;
   const isActiveClassName = (item) => item ? 'film-card__controls-item--active' : '';
 
   return (
@@ -39,7 +40,7 @@ const createFilmCardTemplate = (film) => {
     </p>
     <img src="./${filmPoster}" alt="" class="film-card__poster">
     <p class="film-card__description">${cutDescription}</p>
-    <span class="film-card__comments">${comments.length} comments</span>
+    <span class="film-card__comments">${filmComments} comments</span>
     </a>
     <div class="film-card__controls">
     <button class="film-card__controls-item film-card__controls-item--add-to-watchlist ${isActiveClassName(watchlist)}" type="button">Add to watchlist</button>
@@ -69,7 +70,7 @@ export default class FilmCardView extends AbstractView {
 
   #openPopupClickHandler = (evt) => {
     evt.preventDefault();
-    this._callback.openPopupClick();
+    this._callback.openPopupClick(this.#film);
   };
 
   setWatchListClickHandler = (callback) => {

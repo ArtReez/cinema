@@ -1,8 +1,11 @@
 /* eslint-disable no-undef */
 /* eslint-disable no-var */
 import dayjs from 'dayjs';
-var relativeTime = require('dayjs/plugin/relativeTime');
+import duration from 'dayjs/plugin/duration';
+import relativeTime from 'dayjs/plugin/relativeTime';
+
 dayjs.extend(relativeTime);
+dayjs.extend(duration);
 
 const humanizeFilmDate = (date) => dayjs(date).format('YYYY');
 
@@ -10,11 +13,7 @@ const humanizeFilmDatePopup = (date) => dayjs(date).format('DD MMMM YYYY');
 
 const humanizeFilmDateCommentsPopup = (date) => dayjs().to(dayjs(date));
 
-const humanizeFilmTime = (time) => {
-  const hours = time >= 60 ? (time / 60).toFixed() : '';
-  const minutes = time % 60;
-  return hours ? `${hours}h ${minutes}m` : `${minutes}m`;
-};
+const humanizeFilmTime = (time) => dayjs.duration(time, 'minutes').format('H[h] mm[m]');
 
 const getPoster = (url) => `${url.substring(0, url.lastIndexOf('.'))}.jpg`;
 
@@ -24,7 +23,7 @@ const getGenres = (array) => array.map((item) => `<span class="film-details__gen
 
 const randomItem = (array) => array[parseInt(Math.random() * array.length, 10)];
 
-const getWeigthForNullSortItem = (filmA, filmB) => {
+const getWeightForNullSortItem = (filmA, filmB) => {
   if (filmA === null && filmB === null) {
     return 0;
   }
@@ -41,17 +40,17 @@ const getWeigthForNullSortItem = (filmA, filmB) => {
 };
 
 const sortFilmDate = (filmA, filmB) => {
-  const weigth = getWeigthForNullSortItem(filmA.filmInfo.release.date, filmB.filmInfo.release.date);
-  return weigth ?? dayjs(filmB.filmInfo.release.date).diff(filmA.filmInfo.release.date);
+  const weight = getWeightForNullSortItem(filmA.filmInfo.release.date, filmB.filmInfo.release.date);
+  return weight ?? dayjs(filmB.filmInfo.release.date).diff(filmA.filmInfo.release.date);
 };
 
 const sortFilmRating = (filmA, filmB) => {
-  const weigth = getWeigthForNullSortItem(filmA.filmInfo.totalRating, filmB.filmInfo.totalRating);
-  return weigth ?? (filmB.filmInfo.totalRating - filmA.filmInfo.totalRating);
+  const weight = getWeightForNullSortItem(filmA.filmInfo.totalRating, filmB.filmInfo.totalRating);
+  return weight ?? (filmB.filmInfo.totalRating - filmA.filmInfo.totalRating);
 };
 
 const sortFilmComments = (filmA, filmB) => {
-  const weigth = getWeigthForNullSortItem(filmA.comments.length, filmB.comments.length);
+  const weigth = getWeightForNullSortItem(filmA.comments.length, filmB.comments.length);
   return weigth ?? (filmB.comments.length - filmA.comments.length);
 };
 

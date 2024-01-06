@@ -18,52 +18,42 @@ export default class CommentsModel extends Observable {
     // });
   }
 
-  // get comments() {
-  //   console.log('COMMENTS_GETTER', this.#comments);
-  //   return this.#comments;
-  // }
 
   getComments = async (filmId) => {
     try {
-      return await this.#filmsApiService.getComments(filmId);
-      // console.log('COMMENTS', this.#comments);
+      const response = await this.#filmsApiService.getComments(filmId);
+      return response;
     } catch (err) {
       this.#comments = [];
+      throw new Error('Can\'t get unexciting comments');
+
     }
-
-    // this._notify(UpdateType.COMMENTS);
+    // console.log('COMMENTS', this.#comments);
   };
 
-  addComment = (updateType, update) => {
-    this.#comments = [
-      ...this.#comments,
-      update
-    ];
+  addComment = async (updateType, film, comment) => {
+    try {
+      await this.#filmsApiService.addComment(film, comment);
 
-    this._notify(updateType, this.#comments);
+      this._notify(updateType, film);
 
-    console.log('ADD_COMMENT', this.#comments);
-  };
-
-  deleteComment = (updateType, update) => {
-    const index = this.#comments.findIndex((comment) => comment.id === update);
-
-    if (index === -1) {
-      throw new Error('Can\'t delete unexisting comment');
+      console.log('ADD_COMMENT', this.#comments);
+    } catch(err) {
+      throw new Error('Can\'t add unexciting comment');
     }
-
-    this.#comments = [
-      ...this.#comments.slice(0, index),
-      ...this.#comments.slice(index + 1)
-    ];
-
-    this._notify(updateType, this.#comments);
-
-    console.log('DELETE_COMMENT', this.#comments);
   };
 
-  updateComment = (updateType) => {
+  deleteComment = async (updateType, film, commentId) => {
+    try {
+      await this.#filmsApiService.deleteComment(commentId);
+      // this.#comments = [
+      //   ...this.#comments.slice(0, index),
+      //   ...this.#comments.slice(index + 1)
+      // ];
 
-    this._notify(updateType);
+      this._notify(updateType, film);
+    } catch(err) {
+      throw new Error('Can\'t delete unexciting comment');
+    }
   };
 }
