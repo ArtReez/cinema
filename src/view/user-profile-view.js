@@ -1,6 +1,5 @@
 import AbstractView from '../framework/view/abstract-view.js';
 
-
 const getRating = (count) => {
   if (count === 0 ) {
     return '';

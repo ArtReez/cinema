@@ -1,16 +1,19 @@
 /* eslint-disable no-console */
-import AbstructStatefulView from '../framework/view/abstract-stateful-view.js';
+import AbstractStatefulView from '../framework/view/abstract-stateful-view.js';
 import { humanizeFilmDatePopup, humanizeFilmDateCommentsPopup, humanizeFilmTime, getList, getPoster } from '../utils/film.js';
-import { nanoid } from 'nanoid';
+// import { nanoid } from 'nanoid';
 import { Comment } from '../const.js';
 import he from 'he';
+
+let commentId = null;
 
 const createEmojiTemplate = (emotion) => (
   `${emotion ? `<img src="./images/emoji/${emotion}.png" width="55" height="55" alt="emoji">` : ''}`
 );
 
-const createPopupCommentTemplate = (userComment) => {
+const createCommentTemplate = (userComment, isDisabled, isDeleting) => {
   const {id, author, comment, date, emotion} = userComment;
+  const deleteComment = () => commentId === id ? 'Deleting...' : 'Delete';
 
   return (
     `<li class="film-details__comment">
@@ -22,19 +25,24 @@ const createPopupCommentTemplate = (userComment) => {
         <p class="film-details__comment-info">
           <span class="film-details__comment-author">${author}</span>
           <span class="film-details__comment-day">${humanizeFilmDateCommentsPopup(date)}</span>
-          <button class="film-details__comment-delete" data-id="${id}">Delete</button>
+          <button class="film-details__comment-delete" data-id="${id}" ${isDisabled ? 'disabled' : ''}>
+            ${isDeleting ? deleteComment() : 'Delete'}
+          </button>
         </p>
       </div>
     </li>`
   );
 };
 
-const createCommentInputTemplate = (comment) => (comment ? `${comment}` : '');
+const createCommentInputTemplate = (comment, isDisabled) => (
+  `<textarea class="film-details__comment-input" placeholder="Select reaction below and write comment here"
+    name="comment" ${isDisabled ? 'disabled' : ''}>${comment ? he.encode(comment) : ''}</textarea>`
+);
 
 const createPopupTemplate = (state, commentsList) => {
   const {
     // id,
-    comments,
+    // comments,
     filmInfo: {
       title,
       alternativeTitle,
@@ -56,6 +64,8 @@ const createPopupTemplate = (state, commentsList) => {
     },
     comment,
     emotion,
+    isDisabled,
+    isDeleting,
   } = state;
 
   const filmDate = humanizeFilmDatePopup(date);
@@ -64,52 +74,16 @@ const createPopupTemplate = (state, commentsList) => {
   const filmWrites = getList(writers);
   const filmActors = getList(actors);
   const filmRating = totalRating.toFixed(1);
-  const filmGenresName = genre.length > 1 ? 'Generes' : 'Genre';
+  const filmGenresName = genre.length > 1 ? 'Genres' : 'Genre';
   const filmGenres = genre.map((item) => `<span class="film-details__genre">${item}</span>`).join('');
   const isActiveClassName = (item) => item ? 'film-details__control-button--active' : '';
   const emojiTemplate = createEmojiTemplate(emotion);
-  const commentInputTemplate = createCommentInputTemplate(comment);
-
-  // const commentsFilmFiltered = commentsList.filter((item) => comments.includes(item.id));
-  // const commentsFilm = commentsFilmFiltered.map((userComment) => createPopupCommentTemplate(userComment)).join('');
-
-  // let commentsFilm;
-
-  // const getCommentsFilm = async () => {
-  //   // console.log(commentsList);
-
-  //   try {
-  //     const commentsFilmCurrent = await commentsList.getComments(id);
-  //     // console.log(commentsFilmCurrent);
-
-  //     commentsFilm = commentsFilmCurrent.map((userComment) => createPopupCommentTemplate(userComment)).join('');
-  //     // console.log(commentsFilm);
-
-  //     // console.log('FILM_ID:', id, 'LI:', list);
-  //     return commentsFilm;
-  //   } catch(err) {
-  //     console.log(err);
-  //   }
-  // };
-
-  // const getCommentsFilm = () => {
-  //   console.log(commentsList);
-  //   const comments = commentsList.getComments(id);
-  //   console.log(comments);
-  //   const list = comments.map((userComment) => createPopupCommentTemplate(userComment)).join('');
-  //   return list;
-  // };
-
-  // getCommentsFilm().then((el) => console.log(el));
-  // console.log(commentsFilm);
-
-  // getCommentsFilm();
-  // console.log(commentsList);
-
-  const commentsFilm = commentsList.map((userComment) => createPopupCommentTemplate(userComment)).join('');
+  const commentInputTemplate = createCommentInputTemplate(comment, isDisabled);
+  const commentsFilm = commentsList.map((userComment) => createCommentTemplate(userComment, isDisabled, isDeleting)).join('');
+  const filmComments = commentsList.length;
 
   return (
-    `<section class="film-details">
+    `<div>
     <form class="film-details__inner" action="" method="get">
       <div class="film-details__top-container">
         <div class="film-details__close">
@@ -118,7 +92,6 @@ const createPopupTemplate = (state, commentsList) => {
         <div class="film-details__info-wrap">
           <div class="film-details__poster">
             <img class="film-details__poster-img" src="./${filmPoster}" alt="">
-
             <p class="film-details__age">${ageRating}+</p>
           </div>
 
@@ -178,7 +151,7 @@ const createPopupTemplate = (state, commentsList) => {
 
       <div class="film-details__bottom-container">
         <section class="film-details__comments-wrap">
-          <h3 class="film-details__comments-title">Comments <span class="film-details__comments-count">${comments.length}</span></h3>
+          <h3 class="film-details__comments-title">Comments <span class="film-details__comments-count">${filmComments}</span></h3>
 
           <ul class="film-details__comments-list">${commentsFilm}</ul>
 
@@ -186,7 +159,7 @@ const createPopupTemplate = (state, commentsList) => {
             <div class="film-details__add-emoji-label">${emojiTemplate}</div>
 
             <label class="film-details__comment-label">
-              <textarea class="film-details__comment-input" placeholder="Select reaction below and write comment here" name="comment">${he.encode(commentInputTemplate)}</textarea>
+              ${commentInputTemplate}
             </label>
 
             <div class="film-details__emoji-list">
@@ -214,24 +187,19 @@ const createPopupTemplate = (state, commentsList) => {
         </section>
       </div>
     </form>
-  </section>`
+    </div>`
   );
 };
 
-let commentStatus = Comment.DEFAULT;
-
-export default class PopupView extends AbstructStatefulView {
+export default class PopupView extends AbstractStatefulView {
   #scroll = null;
   #commentsList = [];
-  #comments = null;
+  #status = Comment.DEFAULT;
 
-  constructor(film, comments) {
+  constructor(film, commentsList) {
     super();
     this._state = PopupView.setFilmToState(film);
-    this.#commentsList = comments;
-    // console.log(this.#commentsList);
-    // this.#getComments(film.id);
-    // this.#comments.getComments(film.id).then((el) => console.log(el));
+    this.#commentsList = commentsList;
     this.#setInnerHandlers();
   }
 
@@ -239,16 +207,6 @@ export default class PopupView extends AbstructStatefulView {
     console.log('GET_TEMPLATE -> COMMENTS_LIST:', this.#commentsList);
     return createPopupTemplate(this._state, this.#commentsList);
   }
-
-  // #getComments = async (filmId) => {
-  //   try {
-  //     const commentsList = await this.#comments.getComments(filmId);
-  //     this.#commentsList = commentsList;
-  //     console.log(this.#commentsList);
-  //   } catch(err) {
-  //     console.log(err);
-  //   }
-  // };
 
   #setInnerHandlers = () => {
     this.element.querySelector('.film-details__comment-input')
@@ -281,6 +239,7 @@ export default class PopupView extends AbstructStatefulView {
   };
 
   #emojiClickHandler = (evt) => {
+    evt.preventDefault();
     this.updateElement({
       emotion: evt.target.src.split('/').pop().split('.')[0]
     });
@@ -294,7 +253,7 @@ export default class PopupView extends AbstructStatefulView {
     this.setWatchListClickHandler(this._callback.watchListClick);
     this.setAlreadyWatchedClickHandler(this._callback.alreadyWatchedClick);
     this.setFavoriteClickHandler(this._callback.favoriteClick);
-    this.setAddCommentSubmitHandler(this._callback.formSubmit);
+    this.setAddCommentSubmitHandler(this._callback.addCommentSubmit);
     this.setDeleteCommentClickHandler(this._callback.deleteCommentClick);
     this.setScrollPopupHandler(this._callback.scrollPopup);
   };
@@ -302,21 +261,25 @@ export default class PopupView extends AbstructStatefulView {
   static setFilmToState = (film) => ({...film,
     comment: null,
     emotion: null,
+    isDisabled: false,
+    isDeleting: false
   });
 
   static setStateToFilm = (state) => {
     const film = {...state};
 
-    // if(!film.isComment) {
-    //   film.comment = null;
-    // }
+    if (!film.comment) {
+      film.comment = null;
+    }
 
-    // if(!film.isEmotion) {
-    //   film.emotion = null;
-    // }
+    if (!film.emotion) {
+      film.emotion = null;
+    }
 
     delete film.comment;
     delete film.emotion;
+    delete film.isDisabled;
+    delete film.isDeleting;
 
     return film;
   };
@@ -330,21 +293,20 @@ export default class PopupView extends AbstructStatefulView {
     if (evt.key === 'Enter' && (evt.metaKey || evt.ctrlKey)) {
       evt.preventDefault();
 
-      commentStatus = Comment.EDITED;
+      this.#status = Comment.EDITED;
       const comment = {
-        'id': nanoid(),
-        'author': 'James Carter',
         'comment': this._state.comment ?? 'Some new comment',
-        'date': new Date(),
-        'emotion': this._state.emotion ?? 'angry'
+        'emotion': this._state.emotion ?? 'smile'
       };
 
-      this.element.scrollTop = this.#scroll;
-      this._state.comments = [...this._state.comments, comment.id];
-      const film = PopupView.setStateToFilm(this._state);
-      this._callback.addCommentSubmit(comment, film, commentStatus);
+      console.log('COMMENT_STATE:', comment);
 
-      console.log(commentStatus );
+      this.element.scrollTop = this.#scroll;
+      // this._state.comments = [...this._state.comments, comment.id];
+      const film = PopupView.setStateToFilm(this._state);
+      this._callback.addCommentSubmit(comment, film, this.#status);
+
+      console.log(this.#status );
       console.log('ADD_COMMENT_SUBMIT_HANDLER -> FILM', film);
     }
   };
@@ -358,19 +320,10 @@ export default class PopupView extends AbstructStatefulView {
   #deleteCommentClickHandler = (evt) => {
     evt.preventDefault();
 
-    commentStatus = Comment.EDITED;
-    this._state.comments = this._state.comments.filter((item) => item !== evt.target.dataset.id);
+    commentId = evt.target.dataset.id;
+    this.#status = Comment.EDITED;
     const film = PopupView.setStateToFilm(this._state);
-    this._callback.deleteCommentClick(evt.target.dataset.id, film, commentStatus);
-
-    console.log(commentStatus);
-
-    // console.log('STATE_BEFORE_SAVE:', this._state);
-    // console.log('SCROLL_BEFORE_SAVE:', this.#scroll);
-  };
-
-  setUpdateCommentHandler = (callback) => {
-    this._callback.updateComment = callback;
+    this._callback.deleteCommentClick(evt.target.dataset.id, film, this.#status);
   };
 
   setScrollPopupHandler = (callback) => {
@@ -394,11 +347,6 @@ export default class PopupView extends AbstructStatefulView {
     evt.preventDefault();
     this.#scroll = null;
     this._callback.closedPopupClick();
-
-    if (commentStatus === Comment.EDITED) {
-      this._callback.updateComment();
-      commentStatus = Comment.DEFAULT;
-    }
   };
 
   setWatchListClickHandler = (callback) => {

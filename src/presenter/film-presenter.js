@@ -1,10 +1,9 @@
 /* eslint-disable no-console */
 import FilmCardView from '../view/film-card-view.js';
 import PopupView from '../view/popup-view.js';
-import { UserAction, UpdateType, Container, Mode, Comment } from '../const.js';
+import FilmDetailsView from '../view/film-details-view.js';
+import { UserAction, UpdateType, Container, Mode, Comment, FilterType } from '../const.js';
 import { render, remove, replace } from '../framework/render.js';
-
-let commentStatus = Comment.DEFAULT;
 
 export default class FilmPresenter {
   #filmListContainer = null;
@@ -21,12 +20,16 @@ export default class FilmPresenter {
   #changeMode = null;
   #film = null;
   #scrollPopup = null;
+  #filterType = null;
   #filmTopRatedComponent = null;
   #prevFilmTopRatedComponent = null;
   #filmMostCommentedComponent = null;
   #prevMostCommentedComponent = null;
 
   #mode = Mode.DEFAULT;
+  #status = Comment.DEFAULT;
+  #filmDetailsContainerComponent = new FilmDetailsView();
+
 
   constructor(
     filmListContainer,
@@ -34,26 +37,26 @@ export default class FilmPresenter {
     filmListMostCommentedContainer,
     commentsModel,
     handleViewAction,
-    handleModeChange) {
+    handleModeChange,
+    filterType) {
     this.#filmListContainer = filmListContainer;
     this.#filmListTopRatedContainer = filmListTopRatedContainer;
     this.#filmListMostCommentedContainer = filmListMostCommentedContainer;
     this.#commentsModel = commentsModel;
     this.#changeData = handleViewAction;
     this.#changeMode = handleModeChange;
+    this.#filterType = filterType;
   }
 
   init = (film, container) => {
     this.#film = film;
     this.#popupContainer = document.body;
 
-
     this.#prevFilmPopupComponent = this.#filmPopupComponent;
     this.#filmPopupComponent = new PopupView(film, this.#commentsList);
     this.#filmPopupComponent.setClosedPopupHandler(this.#handleClosedPopupClick);
     this.#filmPopupComponent.setAddCommentSubmitHandler(this.#handleAddCommentSubmit);
     this.#filmPopupComponent.setDeleteCommentClickHandler(this.#handleDeleteCommentClick);
-    this.#filmPopupComponent.setUpdateCommentHandler(this.#handleUpdateComment);
     this.#filmPopupComponent.setScrollPopupHandler(this.#handleScrollPopup);
     this.#filmPopupComponent.setWatchListClickHandler(this.#handleWatchListClick);
     this.#filmPopupComponent.setAlreadyWatchedClickHandler(this.#handleAlreadyWatchedClick);
@@ -118,25 +121,14 @@ export default class FilmPresenter {
         remove(this.#prevMostCommentedComponent);
         break;
     }
-    console.log(this.#scrollPopup);
-
   };
 
-  // #getComments = () => {
-  //   this.#commentsList = this.#commentsModel.comments;
-  // };
-
-  #getComments = async (filmId) => {
+  getComments = async (filmId) => {
     try {
       this.#commentsList = await this.#commentsModel.getComments(filmId);
-      console.log('FILM_PRESENTER -> COMMENT_LIST:', this.#commentsList);
     } catch(err) {
-      console.log(err);
+      throw new Error('Can\'t get film ID');
     }
-  };
-
-  setComments = (comments) => {
-    this.#commentsList = comments;
   };
 
   #handleScrollPopup = (scroll) => {
@@ -159,66 +151,141 @@ export default class FilmPresenter {
     }
   };
 
-  #handleAddCommentSubmit = (comment, film, commentMode) => {
-    commentStatus = commentMode;
+  setDeleting = () => {
+    if (this.#mode === Mode.POPUP) {
+      this.#filmPopupComponent.updateElement({
+        isDisabled: true,
+        isDeleting: true,
+      });
 
-    this.#changeData(
-      UserAction.ADD_COMMENT,
-      UpdateType.COMMENT,
-      comment
-    );
+      this.#filmPopupComponent.element.scrollTop = this.#scrollPopup;
+    }
+  };
 
-    this.#changeData(
-      UserAction.UPDATE_FILM,
-      UpdateType.PATCH,
-      film
-    );
+  setAbording = () => {
+    if (this.#mode === Mode.DEFAULT) {
+      this.#filmCardComponent?.shake();
+      this.#filmTopRatedComponent?.shake();
+      this.#filmMostCommentedComponent?.shake();
+      return;
+    }
+
+    const resetFormState = () => {
+      this.#filmPopupComponent.updateElement({
+        isDisabled: false,
+        isDeleting: false,
+      });
+    };
+
+    this.#filmPopupComponent.shake(resetFormState);
+    this.#filmPopupComponent.element.scrollTop = this.#scrollPopup;
+  };
+
+  #handleAddCommentSubmit = (comment, film, commentStatus) => {
+    this.#status = commentStatus;
+
+    Promise.resolve()
+      .then(() =>
+        this.#changeData(
+          UserAction.ADD_COMMENT,
+          UpdateType.COMMENT,
+          film,
+          comment
+        )
+      )
+      .then(() =>
+        this.#changeData(
+          UserAction.UPDATE_FILM,
+          UpdateType.PATCH,
+          film
+        )
+      );
 
     console.log('ADD_COMMENT');
   };
 
-  #handleDeleteCommentClick = (commentId, film, commentMode) => {
-    commentStatus = commentMode;
+  // #handleAddCommentSubmit = async (comment, film, commentStatus) => {
+  //   this.#status = commentStatus;
 
-    this.#changeData(
-      UserAction.DELETE_COMMENT,
-      UpdateType.COMMENT,
-      commentId
-    );
+  //   await this.#changeData(
+  //     UserAction.ADD_COMMENT,
+  //     UpdateType.COMMENT,
+  //     film,
+  //     comment
+  //   );
 
-    this.#changeData(
-      UserAction.UPDATE_FILM,
-      UpdateType.PATCH,
-      film
-    );
+  //   setTimeout(() => {
+  //     this.#changeData(
+  //       UserAction.UPDATE_FILM,
+  //       UpdateType.PATCH,
+  //       film
+  //     );
+  //   }, 200);
+
+  //   console.log('ADD_COMMENT');
+  // };
+
+  #handleDeleteCommentClick = (commentId, film, commentStatus) => {
+    this.#status = commentStatus;
+
+    Promise.resolve()
+      .then(() =>
+        this.#changeData(
+          UserAction.DELETE_COMMENT,
+          UpdateType.COMMENT,
+          film,
+          commentId
+        )
+      )
+      .then(() =>
+        this.#changeData(
+          UserAction.UPDATE_FILM,
+          UpdateType.PATCH,
+          film
+        )
+      );
 
     console.log('DELETE_COMMENT');
   };
 
-  #handleUpdateComment = () => {
+  #handleUpdateMostCommented = (film) => {
     this.#changeData(
-      UserAction.UPDATE_COMMENT,
-      UpdateType.MINOR,
+      UserAction.UPDATE_FILM,
+      UpdateType.MOST_COMMENTED,
+      film
     );
   };
 
   #openPopup = () => {
-    render(this.#filmPopupComponent, this.#popupContainer);
+    // render(this.#filmPopupComponent, this.#popupContainer); // single componenet
+    render(this.#filmDetailsContainerComponent, this.#popupContainer);
+    render(this.#filmPopupComponent, this.#filmDetailsContainerComponent.element);
     document.addEventListener('keydown', this.#escKeyDownHandler);
     this.#popupContainer.classList.add('hide-overflow');
+    this.#popupContainer.style.marginRight = `${25}px`;
     this.#mode = Mode.POPUP;
 
-    console.log('OPEN_POPUP:', this.#mode);
+    console.log('OPEN_POPUP (MODE):', this.#mode);
   };
 
   #closedPopup = () => {
-    this.#filmPopupComponent.element.remove(this.#film);
+    // this.#filmDetailsContainerComponet.element.remove();
+    // this.#filmPopupComponent.element.remove();
+    remove(this.#filmDetailsContainerComponent);
+    remove(this.#filmPopupComponent); // single componenet
     document.removeEventListener('keydown', this.#escKeyDownHandler);
     this.#popupContainer.classList.remove('hide-overflow');
+    this.#popupContainer.style.marginRight = null;
     this.#scrollPopup = null;
     this.#mode = Mode.DEFAULT;
 
-    console.log('CLOSED_POPUP:', this.#mode);
+    if (this.#status === Comment.EDITED) {
+      this.#handleUpdateMostCommented(this.#film);
+      this.#status = Comment.DEFAULT;
+    }
+
+    console.log('CLOSED_POPUP (MODE):', this.#mode);
+    console.log('CLOSED_POPUP (STATUS):', this.#status);
   };
 
   #escKeyDownHandler = (evt) => {
@@ -227,40 +294,27 @@ export default class FilmPresenter {
       this.#scrollPopup = null;
       this.#filmPopupComponent.reset(this.#film);
       this.#closedPopup();
-
-      if (commentStatus === Comment.EDITED) {
-        this.#handleUpdateComment();
-        commentStatus = Comment.DEFAULT;
-      }
     }
   };
 
-  #handleFilmCardClick = async () => {
-    try {
-      await this.#getComments(this.#film.id);
-      this.#changeMode(); // reset all filmPresenters opened POPUP (NEEDED!!!)
-      this.init(this.#film);
-      // this.#changeData(
-      //   UserAction.GET_COMMENTS,
-      //   UpdateType.COMMENTS,
-      //   this.#film.id,
-      // );
-      this.#openPopup();
-    } catch(err) {
-      throw new Error('Can\'t get film ID');
-    }
+  #handleFilmCardClick = async (film) => {
+    this.#changeMode(); // reset all filmPresenters opened POPUP (NEEDED!!!)
+    await this.getComments(film.id);
+    this.init(film);
+    this.#openPopup();
   };
 
   #handleClosedPopupClick = () => {
     this.#filmPopupComponent.reset(this.#film);
     this.#closedPopup();
-    // this.#handleUpdateComment();
   };
 
   #handleWatchListClick = () => {
     this.#changeData(
       UserAction.UPDATE_FILM,
-      this.#mode === Mode.DEFAULT ? UpdateType.MINOR : UpdateType.PATCH,
+      this.#mode === Mode.DEFAULT && this.#filterType === FilterType.WATCHLIST
+        ? UpdateType.MINOR
+        : UpdateType.PATCH,
       {...this.#film,
         userDetails: {
           ...this.#film.userDetails,
@@ -273,7 +327,9 @@ export default class FilmPresenter {
   #handleAlreadyWatchedClick = () => {
     this.#changeData(
       UserAction.UPDATE_FILM,
-      this.#mode === Mode.DEFAULT ? UpdateType.MINOR : UpdateType.PATCH,
+      this.#mode === Mode.DEFAULT && this.#filterType === FilterType.HISTORY
+        ? UpdateType.MINOR
+        : UpdateType.PATCH,
       {...this.#film,
         userDetails: {
           ...this.#film.userDetails,
@@ -286,7 +342,9 @@ export default class FilmPresenter {
   #handleFavoriteClick = () => {
     this.#changeData(
       UserAction.UPDATE_FILM,
-      this.#mode === Mode.DEFAULT ? UpdateType.MINOR : UpdateType.PATCH,
+      this.#mode === Mode.DEFAULT && this.#filterType === FilterType.FAVORITES
+        ? UpdateType.MINOR
+        : UpdateType.PATCH,
       {...this.#film,
         userDetails: {
           ...this.#film.userDetails,

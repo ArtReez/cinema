@@ -1,10 +1,11 @@
 import AbstractView from '../framework/view/abstract-view.js';
+import {FilterType} from '../const';
 
 const createFilterItemTemplate = (filter, currentFilterType) => {
   const {type, name, count} = filter;
   let filterCount = `<span class="main-navigation__item-count" data-filter-type="${type}">${count}</span>`;
 
-  if (type === 'ALL') {
+  if (type === FilterType.ALL) {
     filterCount = '';
   }
 
